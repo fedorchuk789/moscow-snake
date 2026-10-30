@@ -142,6 +142,10 @@
   .rlist .who small { color: var(--muted); margin-left: 6px; }
   .rlist .pts { font-weight: 700; font-variant-numeric: tabular-nums; }
   .rlist .emptyrow { display: block; color: var(--muted); text-align: center; border: 0; padding: 30px 0; }
+  .account { display: flex; flex-direction: column; align-items: stretch; gap: 8px; font-size: 13px; color: #555; background: #f6f6f6; border-radius: 12px; padding: 10px 12px; text-align: left; }
+  .account span { flex: 1; min-width: 0; }
+  .card .account button { width: 100%; font-size: 15px; padding: 10px 12px; }
+  .card button.google { background: #1a73e8; color: #fff; }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -233,6 +237,7 @@
     <div class="row"><input id="nameInput" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
   </div>
   <p class="rank" id="rank"></p>
+  <div class="account"></div>
   <button id="again">Ещё раз</button>
   <button class="ghost" id="overRecords">Рекорды</button>
 </div></div>
@@ -246,6 +251,7 @@
   </div>
   <label class="mrow" for="soundToggle"><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
   <label class="mrow" for="hintToggle"><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
+  <div class="account"></div>
   <div class="mrow"><span>Ник</span><input id="menuName" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></div>
   <div class="mbtns">
     <button class="ghost" id="menuRecords">Рекорды</button>
@@ -260,6 +266,7 @@
   <h1>Рекорды</h1>
   <div class="tabs"><button class="tab on" data-tab="all">Все</button><button class="tab" data-tab="mine">Мои</button></div>
   <ol class="rlist" id="rlist"></ol>
+  <div class="account"></div>
   <p class="credits" id="syncNote"></p>
   <button id="recordsClose">Закрыть</button>
 </div></div>
@@ -940,40 +947,141 @@ $('menuSigns').onclick = () => {
 };
 $('signsClose').onclick = () => closeOverlay('signsInfo');
 
-// ---------- рекорды ----------
-// Сейчас таблица хранится в браузере. Чтобы она была общей для всех устройств,
-// нужно подключить онлайн-хранилище: функции remoteLoad / remoteSubmit ниже.
-const REMOTE = null;
+// ---------- рекорды: в браузере + общая таблица в Firebase ----------
+// Ключи Firebase не секретные: доступ к данным ограничивают правила Firestore
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDhmkz3zcVP_f3VREKgTmcn1YYpu4RsVhs',
+  authDomain: 'snake-maps.firebaseapp.com',
+  projectId: 'snake-maps',
+  storageBucket: 'snake-maps.firebasestorage.app',
+  messagingSenderId: '695059988492',
+  appId: '1:695059988492:web:638f14758f050cc06e6e29',
+};
+const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+let db = null, fbUser = null, fbReady = null;
+const loadScript = src => new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+// SDK грузим после старта страницы, чтобы не тормозить открытие игры
+function initFirebase() {
+  fbReady ||= (async () => {
+    for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(FB_SDK + f);
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    firebase.auth().onAuthStateChanged(u => {
+      fbUser = u;
+      if (u && !nick && u.displayName) setNick(u.displayName.split(' ')[0]);
+      renderAccount();
+      if (u) uploadLocalBest().catch(() => {});
+    });
+  })().catch(e => { fbReady = null; throw e; });
+  return fbReady;
+}
+setTimeout(() => initFirebase().catch(() => renderAccount()), 1500);
+
+const REMOTE = {
+  async load() {
+    await initFirebase();
+    const snap = await db.collection('scores').orderBy('score', 'desc').limit(50).get();
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  },
+  async mine() {
+    await initFirebase();
+    if (!fbUser) return null;
+    const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(30).get();
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  },
+  async submit(rec) {
+    await initFirebase();
+    if (!fbUser) return;
+    const data = { name: (rec.name || 'Игрок').slice(0, 24), score: rec.score | 0, eaten: rec.eaten | 0, len: rec.len | 0, date: rec.date, uid: fbUser.uid };
+    await db.collection('users').doc(fbUser.uid).collection('games').add(data);
+    const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+    if (!cur.exists || data.score >= cur.data().score) await ref.set(data);   // в общей таблице — лучший результат игрока
+  },
+  async rename(name) {
+    if (!db || !fbUser) return;
+    const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+    if (cur.exists) await ref.set({ ...cur.data(), name: name.slice(0, 24) });
+  },
+  async place(score) {
+    const snap = await db.collection('scores').where('score', '>', score).count().get();
+    return snap.data().count + 1;
+  },
+};
+// первый вход на устройстве: переносим лучший результат, сыгранный до входа
+async function uploadLocalBest() {
+  const best = localScores().filter(r => !r.synced).sort(byScore)[0];
+  if (!best || !best.score) return;
+  await REMOTE.submit({ ...best, name: nick || best.name });
+  const list = localScores(); list.forEach(r => { r.synced = true; }); saveLocalScores(list);
+}
+
+async function signIn() {
+  try {
+    await initFirebase();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try { await firebase.auth().signInWithPopup(provider); }
+    catch (e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await firebase.auth().signInWithRedirect(provider);
+      else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') throw e;
+    }
+  } catch (e) {
+    toast(/disallowed|web-storage|unauthorized/i.test(e.code + e.message) ? 'Вход не работает в этом браузере. Откройте игру в Safari или Chrome' : 'Не удалось войти: ' + (e.code || e.message));
+  }
+}
+function signOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
+function renderAccount() {
+  const html = fbUser
+    ? `<span>Вы вошли: <b>${esc(fbUser.displayName || fbUser.email || 'Google')}</b></span><button class="ghost small" data-act="out">Выйти</button>`
+    : `<span>Войдите, чтобы попасть в общую таблицу и видеть свои рекорды на любом устройстве.</span><button class="small google" data-act="in">Войти через Google</button>`;
+  document.querySelectorAll('.account').forEach(el => { el.innerHTML = html; });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.account button');
+  if (!b) return;
+  b.dataset.act === 'in' ? signIn() : signOut();
+});
+
 let nick = '';
 try { nick = localStorage.getItem('routeSnakeName') || ''; } catch (e) {}
 function setNick(v) {
   nick = v.trim().slice(0, 16);
   try { localStorage.setItem('routeSnakeName', nick); } catch (e) {}
+  if (nick) REMOTE.rename(nick).catch(() => {});
 }
 function localScores() { try { return JSON.parse(localStorage.getItem('routeSnakeScores')) || []; } catch (e) { return []; } }
 function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
-async function remoteLoad() { return REMOTE ? REMOTE.load() : null; }
-async function remoteSubmit(rec) { if (REMOTE) await REMOTE.submit(rec); }
 const byScore = (a, b) => b.score - a.score || b.len - a.len;
 async function submitScore() {
   const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
   const list = [...localScores(), rec].sort(byScore);
+  $('rank').textContent = score > 0 ? `${list.findIndex(r => r.id === rec.id) + 1}-е место в рекордах этого устройства` : '';
+  if (fbUser && score > 0) {
+    rec.synced = true;
+    REMOTE.submit(rec).then(() => REMOTE.place(score)).then(p => { $('rank').textContent = `${p}-е место в общей таблице`; }).catch(() => {});
+  }
   saveLocalScores(list);
-  remoteSubmit(rec).catch(() => {});
-  const place = list.findIndex(r => r.id === rec.id) + 1;
-  $('rank').textContent = score > 0 ? `${place}-е место в таблице рекордов` : '';
   return rec;
 }
 let lastRecId = null, recTab = 'all';
 async function showRecords() {
   openOverlay('records');
-  let list = localScores(), note = 'Рекорды хранятся в этом браузере.';
-  try { const r = await remoteLoad(); if (r) { list = r; note = 'Общая таблица всех игроков.'; } } catch (e) { note = 'Общая таблица недоступна, показаны рекорды этого браузера.'; }
-  if (recTab === 'mine') list = list.filter(r => nick && r.name === nick);
+  renderAccount();
+  $('rlist').innerHTML = '<li class="emptyrow">Загружаю…</li>';
+  let list = null, note = '';
+  try {
+    list = recTab === 'all' ? await REMOTE.load() : await REMOTE.mine();
+    note = recTab === 'all' ? 'Общая таблица: лучший результат каждого игрока.' : 'Ваши игры на всех устройствах.';
+  } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
+  if (!list) {
+    list = localScores();
+    if (recTab === 'mine') list = list.filter(r => !nick || r.name === nick);
+    if (!note) note = 'Рекорды этого устройства. Войдите через Google, чтобы видеть их везде.';
+  }
   list = list.sort(byScore).slice(0, 30);
+  const me = r => r.id === lastRecId || (recTab === 'all' && fbUser && r.uid === fbUser.uid);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${r.id === lastRecId ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
-    : `<li class="emptyrow">${recTab === 'mine' && !nick ? 'Укажи ник в меню, чтобы видеть свои рекорды' : 'Пока пусто. Сыграй первую игру!'}</li>`;
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
+    : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
@@ -987,11 +1095,12 @@ $('nameSave').onclick = () => {
   if (!v) { $('nameInput').focus(); return; }
   setNick(v);
   const list = localScores(); const r = list.find(x => x.id === lastRecId);
-  if (r) { r.name = nick; saveLocalScores(list); remoteSubmit(r).catch(() => {}); }
+  if (r) { r.name = nick; saveLocalScores(list); }
   $('nameBox').classList.add('hidden');
   toast('Ник сохранён');
 };
 $('nameInput').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('nameSave').click(); });
+renderAccount();
 
 // ---------- цикл ----------
 let last = 0;
