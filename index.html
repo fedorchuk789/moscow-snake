@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Змейка-маршрут</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Змейка">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="roads.js?v=3"></script>
@@ -91,8 +97,55 @@
   .card button { margin-top: 18px; width: 100%; font-size: 18px; padding: 14px; border: 0; border-radius: 12px; background: #ffcc00; font-weight: 700; cursor: pointer; color: var(--ink); }
   .hidden { display: none !important; }
   .head svg { filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); display: block; }
-  .sign { width: 34px; height: 34px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
-  .sign svg { display: block; width: 100%; height: 100%; }
+  /* знаки ПДД на карте */
+  .sign { height: 34px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  .sign img { height: 34px; width: auto; max-width: 60px; display: block; }
+  /* активные эффекты знаков */
+  .fx { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(96px + var(--sb)); display: flex; gap: 6px; z-index: 12; pointer-events: none; }
+  .chip { display: flex; align-items: center; gap: 6px; background: var(--card); border-radius: 999px; box-shadow: var(--shadow); padding: 4px 10px 4px 4px;
+          font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .chip img { height: 22px; width: auto; }
+  .head.shield svg { animation: blink .35s infinite alternate; }
+  @keyframes blink { to { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .head.shield svg { animation: none; opacity: .6; } }
+  /* меню паузы и рекорды */
+  .card.menu { text-align: left; display: flex; flex-direction: column; gap: 12px; max-height: 100%; overflow-y: auto; }
+  .card.menu h1 { text-align: center; margin-bottom: 0; }
+  .card button.ghost { background: #f1f1f1; font-size: 15px; padding: 11px; margin-top: 0; }
+  .card button { margin-top: 0; }
+  #over .card { display: flex; flex-direction: column; gap: 12px; }
+  .mrow { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--ink); min-height: 36px; }
+  .mrow span { flex: 1; }
+  .mrow b { min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .mrow input[type=range] { flex: 2; accent-color: var(--blue); }
+  .mrow input:not([type]), #nameInput { font: inherit; font-size: 16px; padding: 7px 9px; border: 1px solid #d0d0d0; border-radius: 8px; min-width: 0; flex: 1.4;
+                                         -webkit-user-select: text; user-select: text; }
+  .switch { appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 14px; background: #d6d6d6; position: relative; cursor: pointer; flex: none; margin: 0; transition: background .15s; }
+  .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: left .15s; }
+  .switch:checked { background: var(--green); } .switch:checked::after { left: 21px; }
+  .mbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fullhint { font-size: 13px; color: #555; background: #f6f3ea; border-radius: 10px; padding: 10px; }
+  .credits { font-size: 11px; color: var(--muted); text-align: center; }
+  .namebox { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 13px; color: #555; }
+  .namebox .row { display: flex; gap: 8px; }
+  .card button.small { width: auto; font-size: 15px; padding: 8px 14px; }
+  .rank { font-weight: 600; color: var(--green); }
+  .rank:empty { display: none; }
+  .tabs { display: flex; background: #f1f1f1; border-radius: 10px; padding: 3px; }
+  .card .tab { flex: 1; background: none; font-size: 14px; padding: 7px; border-radius: 8px; font-weight: 600; color: #555; }
+  .card .tab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .rlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; min-height: 120px; }
+  .rlist li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .rlist li.me { background: #eef8f0; border-radius: 6px; }
+  .rlist .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rlist .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rlist .who small { color: var(--muted); margin-left: 6px; }
+  .rlist .pts { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rlist .emptyrow { display: block; color: var(--muted); text-align: center; border: 0; padding: 30px 0; }
+  .slist { display: flex; flex-direction: column; gap: 8px; }
+  .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
+  .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
+  .srow b { display: block; font-size: 13px; color: var(--ink); }
 
   /* телефон: крупные кнопки поворота под большие пальцы, места — по кнопке */
   @media (max-width: 640px) {
@@ -142,7 +195,7 @@
   </div>
 </div>
 <div class="side">
-  <button class="btn" id="mute" title="Звук (M)"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path id="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path id="cross" d="M16 9.5l5 5M21 9.5l-5 5" style="display:none"/></svg></button>
+  <button class="btn" id="menuBtn" title="Меню и пауза (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <div class="group" title="Масштаб карты (+ / −, колесо мыши)">
     <button class="btn" id="zoomIn"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button class="btn" id="zoomOut" style="border-top:1px solid var(--line)"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
@@ -155,6 +208,7 @@
   <button class="btn on" id="hintBtn" title="Подсказка поворота (H)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/></svg></button>
 </div>
 <div id="turn"></div>
+<div class="fx" id="fx"></div>
 <div class="toast" id="toast"></div>
 <div class="pad">
   <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -168,13 +222,52 @@
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></svg></div>Поворот на ближайшем перекрёстке: кнопки внизу, свайп или стрелки</div>
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
   </div>
-  <div class="keys">+ / − масштаб · [ ] скорость · H подсказка · M звук</div>
+  <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук</div>
   <button id="go">Поехали</button>
 </div></div>
 <div class="overlay hidden" id="over"><div class="card">
   <h1>Авария!</h1>
   <p id="result"></p>
+  <div class="namebox hidden" id="nameBox">
+    <label for="nameInput">Ник для таблицы рекордов</label>
+    <div class="row"><input id="nameInput" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
+  </div>
+  <p class="rank" id="rank"></p>
   <button id="again">Ещё раз</button>
+  <button class="ghost" id="overRecords">Рекорды</button>
+</div></div>
+<div class="overlay hidden" id="menu"><div class="card menu">
+  <h1>Пауза</h1>
+  <button id="resume">Продолжить</button>
+  <div class="mrow">
+    <span>Скорость</span>
+    <input type="range" id="speedRange" min="0" max="1" step="1" aria-label="Скорость змейки">
+    <b id="speedVal">×1</b>
+  </div>
+  <label class="mrow" for="soundToggle"><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
+  <label class="mrow" for="hintToggle"><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
+  <div class="mrow"><span>Ник</span><input id="menuName" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></div>
+  <div class="mbtns">
+    <button class="ghost" id="menuRecords">Рекорды</button>
+    <button class="ghost" id="menuSigns">Знаки</button>
+    <button class="ghost" id="fullBtn">Во весь экран</button>
+    <button class="ghost" id="restart">Заново</button>
+  </div>
+  <p class="fullhint hidden" id="fullHint">На iPhone: в Safari нажмите «Поделиться» → «На экран „Домой“» и запускайте игру с иконки — будет весь экран без панелей.</p>
+  <p class="credits">Карта © OpenStreetMap, OpenFreeMap · Знаки ПДД: Wikimedia Commons (CC BY-SA / PD)</p>
+</div></div>
+<div class="overlay hidden" id="records"><div class="card menu">
+  <h1>Рекорды</h1>
+  <div class="tabs"><button class="tab on" data-tab="all">Все</button><button class="tab" data-tab="mine">Мои</button></div>
+  <ol class="rlist" id="rlist"></ol>
+  <p class="credits" id="syncNote"></p>
+  <button id="recordsClose">Закрыть</button>
+</div></div>
+<div class="overlay hidden" id="signsInfo"><div class="card menu">
+  <h1>Знаки с эффектами</h1>
+  <div class="slist" id="slist"></div>
+  <p class="credits">Остальные знаки ПДД дают +1 очко и удлиняют змейку.</p>
+  <button id="signsClose">Закрыть</button>
 </div></div>
 
 <script>
@@ -209,16 +302,74 @@ const norm = d => ((d % 360) + 540) % 360 - 180;
 
 // ---------- настройки ----------
 const START_LEN = 70, GROW = 45, BASE_SPEED = 38, MAX_SPEED = 75;
-const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 8;
+const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 14;
 const TRAFFIC = [['#3fb33f', .45], ['#2a8f2a', .2], ['#f7c21a', .23], ['#e8453c', .12]];
-const SIGNS = [
-  { pts: 1, svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#fff" stroke="#d62b25" stroke-width="5"/><text x="20" y="26.5" font-size="17" font-weight="800" text-anchor="middle" font-family="Arial">40</text></svg>', slow: true },
-  { pts: 1, svg: '<svg viewBox="0 0 40 40"><path d="M3 5 H37 L20 36 Z" fill="#fff" stroke="#d62b25" stroke-width="4" stroke-linejoin="round"/></svg>' },
-  { pts: 2, svg: '<svg viewBox="0 0 40 40"><path d="M13 2 H27 L38 13 V27 L27 38 H13 L2 27 V13 Z" fill="#d62b25" stroke="#fff" stroke-width="2"/><text x="20" y="24.5" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial">STOP</text></svg>' },
-  { pts: 3, svg: '<svg viewBox="0 0 40 40"><path d="M20 2 L38 20 L20 38 L2 20 Z" fill="#fff" stroke="#333" stroke-width="1"/><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#ffcc00"/></svg>', fast: true },
-  { pts: 1, svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#d62b25" stroke="#fff" stroke-width="2"/><rect x="8" y="16" width="24" height="8" fill="#fff"/></svg>' },
-  { pts: 1, svg: '<svg viewBox="0 0 40 40"><rect x="2" y="2" width="36" height="36" rx="5" fill="#1f5fd6" stroke="#fff" stroke-width="2"/><text x="20" y="29" font-size="24" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial">P</text></svg>' },
+// ---------- знаки ПДД: каталог (signs/index.json) и их влияние на игру ----------
+let CATALOG = [], BY_GROUP = {};
+fetch('signs/index.json').then(r => r.json()).then(list => {
+  CATALOG = list;
+  for (const s of list) (BY_GROUP[s.k.split('.')[0]] ||= []).push(s);
+  if (alive) while (foods.length < FOOD_COUNT) spawnFood();
+}).catch(() => toast('Не удалось загрузить знаки'));
+const signName = k => (CATALOG.find(s => s.k === k) || {}).n || 'Знак ' + k;
+// [номер знака (регулярка), эффект]. Без эффекта знак даёт +1 очко и удлиняет змейку.
+// speed: [множитель, мс]; stop / shield / invert: мс; shrink: метры; force: заказать поворот
+const EFFECTS = [
+  [/^2\.1$/, { pts: 3, text: '+3 очка' }],
+  [/^2\.5$/, { stop: 1200, text: 'стоп на секунду' }],
+  [/^2\.4$/, { speed: [.6, 2000], text: 'медленнее' }],
+  [/^3\.24-(\d+)$/, m => { const f = Math.max(.3, Math.min(1.8, +m[1] / 60));
+    return { speed: [f, 4000], text: f < 1 ? 'медленнее ×' + f.toFixed(1) : 'быстрее ×' + f.toFixed(1) }; }],
+  [/^(3\.25-\d+|3\.31)$/, { clear: true, speed: [1.25, 2500], text: 'ограничения сняты' }],
+  [/^5\.1$/, { speed: [1.7, 4000], text: 'разгон ×1.7' }],
+  [/^5\.3$/, { speed: [1.35, 3500], text: 'разгон ×1.35' }],
+  [/^7\.(3|21)$/, { speed: [1.5, 5000], text: 'заправка, разгон' }],
+  [/^7\.(1|2|4)$/, { shield: 6000, text: 'щит: 6 с можно сквозь себя' }],
+  [/^1\.25$/, { shrink: 60, text: 'хвост короче на 60 м' }],
+  [/^7\.5$/, { shrink: 40, text: 'хвост короче на 40 м' }],
+  [/^1\.15$/, { invert: 5000, text: 'скользко: повороты наоборот' }],
+  [/^1\.32$/, { speed: [.4, 3000], text: 'затор' }],
+  [/^(1\.22|1\.23|5\.19\.\d)$/, { speed: [.6, 2500], text: 'пешеходы, медленнее' }],
+  [/^5\.21$/, { speed: [.5, 3000], text: 'жилая зона, медленнее' }],
+  [/^(1\.17|5\.20)$/, { speed: [.5, 1500], text: 'лежачий полицейский' }],
+  [/^3\.(1|2)$/, { pts: -2, text: 'штраф −2 очка' }],
+  [/^7\.1[23]$/, { pts: -1, text: 'штраф −1 очко' }],
+  [/^4\.1\.2$/, { force: 'R', text: 'только направо' }],
+  [/^4\.1\.3$/, { force: 'L', text: 'только налево' }],
+  [/^7\.7$/, { pts: 2, grow: 90, text: '+2 очка, змейка длиннее' }],
+  [/^6\.4$/, { pts: 2, text: '+2 очка' }],
 ];
+function effectOf(k) {
+  for (const [re, e] of EFFECTS) { const m = k.match(re); if (m) return typeof e === 'function' ? e(m) : e; }
+  return null;
+}
+// таймерные эффекты считаются по игровому времени, чтобы пауза их не съедала
+let gameTime = 0, fx = [];             // fx: { kind, until, f?, k }
+const fxActive = kind => fx.some(e => e.kind === kind && e.until > gameTime);
+function speedFactor() {
+  if (fxActive('stop')) return 0;
+  return fx.reduce((m, e) => e.kind === 'speed' && e.until > gameTime ? m * e.f : m, 1);
+}
+const FX_LABEL = { stop: 'стоп', shield: 'щит', invert: 'наоборот' };
+function renderFx() {
+  fx = fx.filter(e => e.until > gameTime);
+  const html = fx.map(e => `<div class="chip"><img src="signs/${e.k}.svg" alt="">${e.kind === 'speed' ? '×' + e.f.toFixed(1) : FX_LABEL[e.kind]} ${Math.ceil((e.until - gameTime) / 1000)}</div>`).join('');
+  if ($('fx').innerHTML !== html) $('fx').innerHTML = html;
+  headEl.classList.toggle('shield', fxActive('shield'));
+}
+function applySign(k) {
+  const e = effectOf(k) || {};
+  score = Math.max(0, score + (e.pts ?? 1));
+  if (e.shrink) bodyLen = Math.max(START_LEN, bodyLen - e.shrink); else bodyLen += e.grow || GROW;
+  if (e.clear) fx = fx.filter(x => !(x.kind === 'speed' && x.f < 1) && x.kind !== 'stop');
+  if (e.speed) fx.push({ kind: 'speed', f: e.speed[0], until: gameTime + e.speed[1], k });
+  if (e.stop) fx.push({ kind: 'stop', until: gameTime + e.stop, k });
+  if (e.shield) fx.push({ kind: 'shield', until: gameTime + e.shield, k });
+  if (e.invert) fx.push({ kind: 'invert', until: gameTime + e.invert, k });
+  if (e.force) setQueued(e.force);
+  if (e.pts < 0) SFX.slow(); else if (e.speed && e.speed[0] > 1) SFX.fast(); else if (e.speed || e.stop) SFX.slow(); else SFX.eat(Math.max(1, e.pts || 1));
+  toast(`«${signName(k)}»${e.text ? ': ' + e.text : ''}`);
+}
 
 // ---------- карта ----------
 const RASTER_STYLE = { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } },
@@ -276,7 +427,7 @@ headEl.innerHTML = '<svg width="44" height="44" viewBox="0 0 40 40"><path d="M20
 const headMarker = new maplibregl.Marker({ element: headEl, rotationAlignment: 'map', pitchAlignment: 'map' });
 
 // ---------- состояние ----------
-let head, trail, bodyLen, speed, slowUntil, fastUntil, score, eaten = 0, queued, traffic, sinceTraffic, foods, alive, camB, bodyPieces;
+let head, trail, bodyLen, speed, score, eaten = 0, queued, traffic, sinceTraffic, foods, alive, camB, bodyPieces;
 const $ = id => document.getElementById(id);
 
 function pickTraffic() {
@@ -296,7 +447,7 @@ function reset() {
   map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
   traffic = pickTraffic(); sinceTraffic = 0;
   trail = [{ p: P[s], c: traffic }];
-  bodyLen = START_LEN; speed = BASE_SPEED; slowUntil = fastUntil = 0; score = 0; eaten = 0; queued = null; navDirty = true;
+  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0;
   camB = brg(head.from, head.to);
   (foods || []).forEach(f => f.m.remove());
   foods = [];
@@ -404,34 +555,36 @@ function segDist(p, a, b) {
   return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
 }
 function hitSelf(hp) {
+  if (fxActive('shield')) return false;
   for (const [a, b, , d0] of bodyPieces) if (d0 >= SAFE_NECK && segDist(hp, a, b) < HIT) return true;
   return false;
 }
 
 // ---------- еда: знаки на узлах графа ----------
 function spawnFood() {
+  if (!CATALOG.length) return;
   const hp = head ? headPos() : [0, 0];
   let i, tries = 0;
   do { i = Math.floor(Math.random() * P.length); tries++; }
-  while (tries < 500 && (dist(P[i], hp) < 120 || dist(P[i], hp) > 650 || foods.some(f => dist(P[f.i], P[i]) < 80)));
-  const kind = SIGNS[Math.floor(Math.random() * SIGNS.length)];
+  while (tries < 500 && (dist(P[i], hp) < 80 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 60)));
+  // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
+  const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
+  const sign = g[Math.floor(Math.random() * g.length)];
   const el = document.createElement('div');
-  el.className = 'sign'; el.innerHTML = kind.svg;
+  el.className = 'sign'; el.title = sign.k + ' ' + sign.n;
+  el.innerHTML = `<img src="signs/${sign.k}.svg" alt="${esc(sign.n)}" draggable="false">`;
   const m = new maplibregl.Marker({ element: el }).setLngLat(NODES[i]).addTo(map);
-  foods.push({ i, kind, m });
+  foods.push({ i, k: sign.k, m });
 }
-function checkFood(hp, now) {
+function checkFood(hp) {
   for (let j = foods.length - 1; j >= 0; j--) {
     const f = foods[j], d = dist(P[f.i], hp);
     if (d < EAT) {
       f.m.remove(); foods.splice(j, 1);
-      score += f.kind.pts; eaten++; bodyLen += GROW;
-      speed = Math.min(MAX_SPEED, speed + 1.5);
-      SFX.eat(f.kind.pts);
-      if (f.kind.slow) { slowUntil = now + 3500; SFX.slow(); }
-      if (f.kind.fast) { fastUntil = now + 3000; SFX.fast(); }
+      eaten++; speed = Math.min(MAX_SPEED, speed + 1.2);
+      applySign(f.k);
       spawnFood();
-    } else if (d > 1100) { f.m.remove(); foods.splice(j, 1); spawnFood(); }
+    } else if (d > 1000) { f.m.remove(); foods.splice(j, 1); spawnFood(); }
   }
 }
 
@@ -478,7 +631,7 @@ function tone(freq, dur, { type = 'square', vol = .2, to = 0, delay = 0 } = {}) 
   o.connect(g).connect(master); o.start(t); o.stop(t + dur + .02);
 }
 function music() {
-  if (!AC || !pad || !alive) return;
+  if (!AC || !pad || !alive || paused) return;
   if (nextBeat < AC.currentTime) nextBeat = AC.currentTime + .05;
   while (nextBeat < AC.currentTime + .2) {           // ноты планируем чуть вперёд, чтобы ритм не «плыл»
     const ch = CHORDS[Math.floor(beat / 8) % CHORDS.length];
@@ -503,13 +656,13 @@ const SFX = {
 };
 function setMuted(m) {
   muted = m;
-  $('wave').style.display = m ? 'none' : ''; $('cross').style.display = m ? '' : 'none';
+  if ($('soundToggle')) $('soundToggle').checked = !m;
   if (master) master.gain.value = m ? 0 : 0.5;
   try { localStorage.setItem('routeSnakeMute', m ? '1' : '0'); } catch (e) {}
 }
 
 // ---------- скорость змейки ----------
-const MULS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5];
 let mulIdx = MULS.indexOf(1), toastT;
 try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
 function toast(text) {
@@ -674,7 +827,8 @@ function setQueued(q) {
 }
 function steer(k) {
   audioInit();
-  if (!alive) return;
+  if (!alive || paused) return;
+  if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
   setQueued(k === 'S' ? null : k);
   SFX.queue();
 }
@@ -685,10 +839,12 @@ function toggleGraph() {
 const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: 'S', KeyW: 'S' };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;           // печатаем адрес — не рулим
+  if (paused && e.code !== 'Escape' && e.code !== 'KeyP') return;
   if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) steer(KEYS[e.code]); }
   if (e.code === 'KeyG') toggleGraph();
   if (e.code === 'KeyH') setHint(!hintOn, true);
   if (e.code === 'KeyM') setMuted(!muted);
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (alive) setPaused(!paused); return; }
   if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomLvl + .5);
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') setZoom(zoomLvl - .5);
   if (e.code === 'BracketRight' || e.code === 'PageUp') setMul(mulIdx + 1, true);
@@ -734,7 +890,6 @@ function closePlaces() { if (narrow()) { $('places').classList.remove('open'); $
 // подпись OpenStreetMap — свёрнутой кнопкой «i», чтобы не лезла под пальцы
 map.on('load', () => document.querySelectorAll('.maplibregl-compact-show').forEach(el => el.classList.remove('maplibregl-compact-show')));
 const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.currentTarget.blur(); fn(); });
-onBtn('mute', () => setMuted(!muted));
 onBtn('zoomIn', () => setZoom(zoomLvl + .5));
 onBtn('zoomOut', () => setZoom(zoomLvl - .5));
 onBtn('faster', () => setMul(mulIdx + 1, true));
@@ -742,15 +897,111 @@ onBtn('slower', () => setMul(mulIdx - 1, true));
 onBtn('hintBtn', () => setHint(!hintOn, true));
 setMuted(muted); setMul(mulIdx, false); setHint(hintOn, false);
 
+// ---------- пауза и меню ----------
+let paused = false;
+function openOverlay(id) { $(id).classList.remove('hidden'); }
+function closeOverlay(id) { $(id).classList.add('hidden'); }
+function setPaused(p) {
+  if (!alive) p = false;
+  paused = p;
+  if (pad && AC) pad.g.gain.setTargetAtTime(p || !alive ? 0 : .035, AC.currentTime, .2);
+  if (p) { syncMenu(); openOverlay('menu'); } else { ['menu', 'records', 'signsInfo'].forEach(closeOverlay); }
+}
+function syncMenu() {
+  $('speedRange').max = MULS.length - 1; $('speedRange').value = mulIdx; $('speedVal').textContent = '×' + MULS[mulIdx];
+  $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('menuName').value = nick;
+  $('fullBtn').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
+}
+$('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), openOverlay('menu')); });
+$('resume').onclick = () => { closeOverlay('menu'); setPaused(false); };
+$('restart').onclick = () => { ['menu', 'over'].forEach(closeOverlay); start(); };
+$('speedRange').addEventListener('input', e => { setMul(+e.target.value, false); $('speedVal').textContent = '×' + MULS[mulIdx]; });
+$('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
+$('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
+$('menuName').addEventListener('change', e => setNick(e.target.value));
+$('menuName').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); });
+// во весь экран: Android и компьютер — Fullscreen API, iPhone — только с иконки на экране «Домой»
+const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
+if (standalone) $('fullBtn').classList.add('hidden');
+$('fullBtn').onclick = () => {
+  const el = document.documentElement;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => $('fullHint').classList.remove('hidden'));
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else $('fullHint').classList.remove('hidden');
+  setTimeout(syncMenu, 300);
+};
+document.addEventListener('visibilitychange', () => { if (document.hidden && alive && !paused) setPaused(true); });
+$('menuSigns').onclick = () => {
+  const seen = new Set();
+  $('slist').innerHTML = CATALOG.filter(s => { const e = effectOf(s.k); if (!e || seen.has(e.text)) return false; seen.add(e.text); return true; })
+    .map(s => `<div class="srow"><img src="signs/${s.k}.svg" alt=""><div><b>${s.k} ${s.n}</b>${effectOf(s.k).text}</div></div>`).join('');
+  openOverlay('signsInfo');
+};
+$('signsClose').onclick = () => closeOverlay('signsInfo');
+
+// ---------- рекорды ----------
+// Сейчас таблица хранится в браузере. Чтобы она была общей для всех устройств,
+// нужно подключить онлайн-хранилище: функции remoteLoad / remoteSubmit ниже.
+const REMOTE = null;
+let nick = '';
+try { nick = localStorage.getItem('routeSnakeName') || ''; } catch (e) {}
+function setNick(v) {
+  nick = v.trim().slice(0, 16);
+  try { localStorage.setItem('routeSnakeName', nick); } catch (e) {}
+}
+function localScores() { try { return JSON.parse(localStorage.getItem('routeSnakeScores')) || []; } catch (e) { return []; } }
+function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
+async function remoteLoad() { return REMOTE ? REMOTE.load() : null; }
+async function remoteSubmit(rec) { if (REMOTE) await REMOTE.submit(rec); }
+const byScore = (a, b) => b.score - a.score || b.len - a.len;
+async function submitScore() {
+  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
+  const list = [...localScores(), rec].sort(byScore);
+  saveLocalScores(list);
+  remoteSubmit(rec).catch(() => {});
+  const place = list.findIndex(r => r.id === rec.id) + 1;
+  $('rank').textContent = score > 0 ? `${place}-е место в таблице рекордов` : '';
+  return rec;
+}
+let lastRecId = null, recTab = 'all';
+async function showRecords() {
+  openOverlay('records');
+  let list = localScores(), note = 'Рекорды хранятся в этом браузере.';
+  try { const r = await remoteLoad(); if (r) { list = r; note = 'Общая таблица всех игроков.'; } } catch (e) { note = 'Общая таблица недоступна, показаны рекорды этого браузера.'; }
+  if (recTab === 'mine') list = list.filter(r => nick && r.name === nick);
+  list = list.sort(byScore).slice(0, 30);
+  $('syncNote').textContent = note;
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${r.id === lastRecId ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
+    : `<li class="emptyrow">${recTab === 'mine' && !nick ? 'Укажи ник в меню, чтобы видеть свои рекорды' : 'Пока пусто. Сыграй первую игру!'}</li>`;
+}
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  recTab = t.dataset.tab; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t)); showRecords();
+});
+$('menuRecords').onclick = showRecords;
+$('overRecords').onclick = showRecords;
+$('recordsClose').onclick = () => closeOverlay('records');
+$('nameSave').onclick = () => {
+  const v = $('nameInput').value.trim();
+  if (!v) { $('nameInput').focus(); return; }
+  setNick(v);
+  const list = localScores(); const r = list.find(x => x.id === lastRecId);
+  if (r) { r.name = nick; saveLocalScores(list); remoteSubmit(r).catch(() => {}); }
+  $('nameBox').classList.add('hidden');
+  toast('Ник сохранён');
+};
+$('nameInput').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('nameSave').click(); });
+
 // ---------- цикл ----------
 let last = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  if (alive && map.getSource('body')) {
-    let v = speed * MULS[mulIdx];
-    if (now < slowUntil) v *= 0.55;
-    if (now < fastUntil) v *= 1.4;
+  if (alive && !paused && map.getSource('body')) {
+    gameTime += dt * 1000;
+    const v = speed * MULS[mulIdx] * speedFactor();
     advance(v * dt);
+    renderFx();
     const hp = headPos(), b = brg(head.from, head.to);
     map.getSource('body').setData(buildBody(hp));
     if (hintOn) map.getSource('preview').setData(previewGeo(hp));
@@ -761,7 +1012,7 @@ function frame(now) {
     headMarker.setLngLat(ll).setRotation(b);
     const z = map.getZoom();
     map.jumpTo({ center: ll, bearing: camB, zoom: z + (zoomLvl - z) * Math.min(1, dt * 8) });
-    checkFood(hp, now);
+    checkFood(hp);
     $('score').textContent = score; $('len').textContent = Math.round(bodyLen); $('eaten').textContent = eaten;
     if (hitSelf(hp)) gameOver();
   }
@@ -769,8 +1020,9 @@ function frame(now) {
 }
 function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
-  reset(); alive = true;
-  $('start').classList.add('hidden'); $('over').classList.add('hidden');
+  reset(); alive = true; paused = false;
+  ['start', 'over', 'menu', 'records', 'signsInfo'].forEach(closeOverlay);
+  $('rank').textContent = '';
   audioInit(); SFX.start();
   if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
 }
@@ -779,9 +1031,10 @@ function gameOver() {
   SFX.crash();
   if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
   if (map.getSource('preview')) map.getSource('preview').setData(empty());
-  let best = 0;
-  try { best = Math.max(score, +localStorage.getItem('routeSnakeBest') || 0); localStorage.setItem('routeSnakeBest', best); } catch (e) { best = score; }
-  $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м. Рекорд: ${best} очков.`;
+  fx = []; renderFx();
+  $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м.`;
+  submitScore().then(rec => { lastRecId = rec.id; });
+  $('nameBox').classList.toggle('hidden', !!nick);
   $('over').classList.remove('hidden');
 }
 $('go').onclick = start; $('again').onclick = start;
