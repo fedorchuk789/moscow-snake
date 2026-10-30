@@ -179,7 +179,23 @@
 
 <script>
 // ---------- граф дорог (OSM) в локальных метрах ----------
-const NODES = ROADS.nodes, ADJ = ROADS.adj;
+// тупики (дворы без выезда, обрезанные края карты) убираем: змейка там могла только
+// развернуться и врезаться в себя без вины игрока
+const { NODES, ADJ } = pruneDeadEnds(ROADS.nodes, ROADS.adj);
+function pruneDeadEnds(nodes, adj) {
+  const deg = adj.map(a => a.length), dead = new Uint8Array(nodes.length), q = [];
+  deg.forEach((d, i) => { if (d <= 1) q.push(i); });
+  while (q.length) {
+    const v = q.pop();
+    if (dead[v]) continue;
+    dead[v] = 1;
+    for (const w of adj[v]) if (!dead[w] && --deg[w] <= 1) q.push(w);
+  }
+  const idx = new Int32Array(nodes.length).fill(-1), N = [], A = [];
+  nodes.forEach((p, i) => { if (!dead[i]) { idx[i] = N.length; N.push(p); } });
+  nodes.forEach((p, i) => { if (!dead[i]) A.push(adj[i].filter(w => !dead[w]).map(w => idx[w])); });
+  return { NODES: N, ADJ: A };
+}
 const LNG0 = 37.62, LAT0 = 55.75;
 // точки старта в центре: Охотный Ряд, Лубянка, Москворецкий мост, Волхонка, Тверская
 const BOUNDS = NODES.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [180, 90, -180, -90]);
@@ -538,6 +554,7 @@ const PLACE_ICON = {
 const PLACE_NAME = { home: 'Дом', work: 'Работа' };
 let places = {}, nav = null, navDirty = true;      // nav = { key, node, marker }
 try { places = JSON.parse(localStorage.getItem('routeSnakePlaces')) || {}; } catch (e) {}
+for (const k in places) if (!places[k] || !places[k].ll) delete places[k];   // старый формат хранил номер узла
 const savePlaces = () => { try { localStorage.setItem('routeSnakePlaces', JSON.stringify(places)); } catch (e) {} };
 
 function nearestNode(x, y) {
@@ -577,7 +594,7 @@ function setNav(key) {
   if (key && places[key]) {
     const el = document.createElement('div');
     el.className = 'pin'; el.innerHTML = PLACE_ICON[key];
-    const node = places[key].node;
+    const ll = places[key].ll, node = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY)[0];
     nav = { key, node, marker: new maplibregl.Marker({ element: el }).setLngLat(NODES[node]).addTo(map) };
     navDirty = true;
     toast('Маршрут: ' + places[key].addr);
@@ -627,9 +644,9 @@ function editPlace(el) {
     try {
       const ll = await geocode(q);
       if (!ll) { toast('Не нашёл адрес в игровой зоне (центр Москвы)'); return; }
-      const [node, off] = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY);
+      const [, off] = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY);
       if (off > 400) { toast('Адрес вне игровой зоны'); return; }
-      places[key] = { addr: q, node };
+      places[key] = { addr: q, ll };
       savePlaces(); close(); renderPlaces();
       setNav(key); closePlaces();
     } catch (err) { toast('Поиск адреса недоступен: ' + err.message); }
