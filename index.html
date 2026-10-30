@@ -25,7 +25,10 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #f8f4f0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
                overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* карта во весь экран телефона, в том числе под полупрозрачными панелями браузера */
-  #map { position: fixed; left: 0; right: 0; top: 0; height: 100%; height: 100lvh; touch-action: none; }
+  /* Карта с запасом на чёлку и полоску «домой»: в приложении с экрана «Домой» iPhone
+     считает высоту без строки статуса, и снизу оставалась пустая полоса */
+  #map { position: fixed; left: 0; right: 0; top: 0; height: 100%;
+         height: calc(100lvh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)); touch-action: none; }
   button { touch-action: manipulation; font: inherit; color: inherit; }
   .ico { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
   .top { position: absolute; top: calc(var(--gap) + var(--st)); left: calc(var(--gap) + var(--sl)); display: flex; gap: 10px; align-items: center; z-index: 12; }
@@ -244,6 +247,48 @@
     .pad button { height: 56px; }
     #turn { bottom: calc(80px + var(--sb)); }
   }
+  /* ---------- тёмная тема: карточки как в ночном режиме 2ГИС ---------- */
+  :root[data-theme="dark"] { --card: #232428; --ink: #ececee; --muted: #9a9ba1; --line: #36373d; --blue: #5b9bff; --route: #9a83ff;
+    --shadow: 0 1px 4px rgba(0,0,0,.5), 0 2px 12px rgba(0,0,0,.35); color-scheme: dark; }
+  :root[data-theme="dark"], :root[data-theme="dark"] body { background: #0c0c0c; }
+  [data-theme="dark"] .btn:hover, [data-theme="dark"] .place:hover, [data-theme="dark"] button.row:hover { background: #2c2d32; }
+  [data-theme="dark"] .btn:active, [data-theme="dark"] button.row:active { background: #313238; }
+  [data-theme="dark"] .btn.on { background: #1f2f4a; }
+  [data-theme="dark"] .pico { background: #34353b; }
+  [data-theme="dark"] .pico svg { fill: #d8d8dc; }
+  [data-theme="dark"] .place.active { background: #2e2747; }
+  [data-theme="dark"] .pinput, [data-theme="dark"] .row input:not([type]), [data-theme="dark"] #nameInput, [data-theme="dark"] .codein,
+  [data-theme="dark"] .mrow input:not([type]) { background: #18191c; color: var(--ink); border-color: #45464d; }
+  [data-theme="dark"] .pedit:hover { background: #34353b; }
+  [data-theme="dark"] .pad button:active { background: #1f2f4a; }
+  [data-theme="dark"] .card { background: var(--card); color: var(--ink); }
+  [data-theme="dark"] .card p, [data-theme="dark"] .tip, [data-theme="dark"] .namebox, [data-theme="dark"] .codenote,
+  [data-theme="dark"] .fullhint, [data-theme="dark"] .account, [data-theme="dark"] .srow { color: #c4c5ca; }
+  [data-theme="dark"] .card button.ghost, [data-theme="dark"] .grp .account button.ghost { background: #34353b; color: var(--ink); }
+  [data-theme="dark"] .card button:not(.ghost):not(.google):not(.tab):not(.link) { color: #1a1a1a; }
+  [data-theme="dark"] .account { background: #2b2c31; }
+  [data-theme="dark"] .grp .account { background: none; }
+  [data-theme="dark"] .switch { background: #4a4b52; }
+  [data-theme="dark"] .rlist li.me { background: #1d3324; }
+  [data-theme="dark"] .tabs, [data-theme="dark"] .page .tabs { background: #18191c; }
+  [data-theme="dark"] .tab.on, [data-theme="dark"] .page .tab.on { background: #34353b; color: var(--ink); }
+  [data-theme="dark"] .card .tab, [data-theme="dark"] .page .tab { color: #a9aab0; }
+  [data-theme="dark"] .sheet { background: #141518; }
+  [data-theme="dark"] .x { background: #2c2d32; }
+  [data-theme="dark"] .x .ico { stroke: #c4c5ca; }
+  [data-theme="dark"] .row + .row::before, [data-theme="dark"] .row + .fullhint::before { background: #34353b; }
+  [data-theme="dark"] .page .srow { border-bottom-color: #2f3035; }
+  [data-theme="dark"] .page .srow.special { color: #ff8a80; }
+  [data-theme="dark"] .row .kbd { border-color: #45464d; }
+  [data-theme="dark"] .chip.danger { background: #4a1f1d; color: #ffb4ab; }
+  [data-theme="dark"] .fullhint { background: none; }
+  [data-theme="dark"] .sign, [data-theme="dark"] .head svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
+  [data-theme="dark"] .maplibregl-ctrl-attrib { background: rgba(35,36,40,.8); color: #aaa; }
+  [data-theme="dark"] .maplibregl-ctrl-attrib a { color: #ccc; }
+  [data-theme="dark"] .maplibregl-ctrl-attrib-button { filter: invert(1); }
+  #themeBtn .moon { display: none; }
+  [data-theme="dark"] #themeBtn .moon { display: block; }
+  [data-theme="dark"] #themeBtn .sun { display: none; }
 </style>
 </head>
 <body>
@@ -281,6 +326,7 @@
     <button class="btn" id="slower"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
   </div>
   <button class="btn on" id="hintBtn" title="Подсказка поворота (H)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/></svg></button>
+  <button class="btn" id="themeBtn" title="Светлая или тёмная тема (T)" aria-label="Сменить тему"><svg class="ico sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
 </div>
 <div id="turn"></div>
 <div class="fx" id="fx"></div>
@@ -329,6 +375,7 @@
       <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0" max="1" step="1" aria-label="Скорость змейки"></div>
       <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
+      <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
     <div class="grp">
       <button class="row" id="menuRecords"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></i><span>Рекорды</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -432,8 +479,8 @@ const EFFECTS = [
   [/^3\.1$/, { brick: true, pts: 0, text: 'змейка краснеет, третий такой знак — авария' }],
   [/^3\.2$/, { pts: -2, text: 'штраф −2 очка' }],
   [/^7\.1[23]$/, { pts: -1, text: 'штраф −1 очко' }],
-  [/^4\.1\.2$/, { force: 'R', text: 'только направо' }],
-  [/^4\.1\.3$/, { force: 'L', text: 'только налево' }],
+  [/^4\.1\.2$/, { force: 'R', text: 'змейка сама свернёт направо на ближайшем перекрёстке (↑ отменяет)' }],
+  [/^4\.1\.3$/, { force: 'L', text: 'змейка сама свернёт налево на ближайшем перекрёстке (↑ отменяет)' }],
   [/^7\.7$/, { pts: 2, grow: 90, text: '+2 очка, змейка длиннее' }],
   [/^6\.4$/, { pts: 2, text: '+2 очка' }],
 ];
@@ -480,8 +527,13 @@ function applySign(k) {
 // ---------- карта ----------
 const RASTER_STYLE = { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } },
   layers: [{ id: 'osm', type: 'raster', source: 'osm' }] };
+// ---------- тема: светлая или тёмная, по умолчанию как в системе ----------
+const MAP_STYLES = { light: 'https://tiles.openfreemap.org/styles/liberty', dark: 'https://tiles.openfreemap.org/styles/dark' };
+let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+try { const t = localStorage.getItem('routeSnakeTheme'); if (MAP_STYLES[t]) theme = t; } catch (e) {}
+document.documentElement.dataset.theme = theme;
 const map = new maplibregl.Map({
-  container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
+  container: 'map', style: MAP_STYLES[theme],
   center: toLL(0, 0), zoom: 16.5, pitch: 40, interactive: false, attributionControl: { compact: true },
 });
 let styleOk = false;
@@ -616,8 +668,9 @@ function advance(move) {
   while (move > 0) {
     const L = dist(P[head.from], P[head.to]);
     const rem = L - head.d;
-    if (move < rem) { head.d += move; return; }
-    move -= rem;
+    if (move < rem) { head.d += move; odo += move; return; }
+    move -= rem; odo += rem;
+    if (queued && odo - queuedAt > QUEUE_TTL) setQueued(null);
     sinceTraffic += L;
     if (sinceTraffic > 90 + Math.random() * 160) { traffic = pickTraffic(); sinceTraffic = 0; }
     const nxt = chooseNext(head.to, head.from, brg(head.from, head.to));
@@ -935,8 +988,12 @@ const TURN_ICON = {
   L: '<path d="M16 20v-7a3 3 0 0 0-3-3H6"/><path d="M10 6l-4 4 4 4"/>',
   R: '<path d="M8 20v-7a3 3 0 0 1 3-3h7"/><path d="M14 6l4 4-4 4"/>',
 };
+// заказанный поворот живёт 300 м: если подходящего съезда так и не нашлось, он отменяется,
+// а не срабатывает где-то далеко, когда о нём уже забыли
+const QUEUE_TTL = 300;
+let odo = 0, queuedAt = 0;
 function setQueued(q) {
-  queued = q;
+  queued = q; queuedAt = odo;
   $('turn').innerHTML = q ? `<svg class="ico" viewBox="0 0 24 24">${TURN_ICON[q]}</svg>` : '';
   $('turn').classList.toggle('on', !!q);
 }
@@ -958,6 +1015,7 @@ addEventListener('keydown', e => {
   if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) steer(KEYS[e.code]); }
   if (e.code === 'KeyG') toggleGraph();
   if (e.code === 'KeyH') setHint(!hintOn, true);
+  if (e.code === 'KeyT') setTheme(theme === 'dark' ? 'light' : 'dark');
   if (e.code === 'KeyM') setMuted(!muted);
   if (e.code === 'Escape' || e.code === 'KeyP') { if (alive) setPaused(!paused); return; }
   if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomLvl + .5);
@@ -974,21 +1032,27 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && AC
 // жесты на карте: свайп влево/вправо — поворот, вверх — прямо; щипок — масштаб
 let touch0 = null;
 const touchDist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+// Свайп решается только при отпускании пальца: начало щипка (первый палец уже едет,
+// второй ещё не коснулся) раньше засчитывалось как поворот.
 $('map').addEventListener('touchstart', e => {
   e.preventDefault();
-  touch0 = e.touches.length === 2 ? { pinch: touchDist(e.touches), z: zoomLvl }
-    : e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, done: false } : null;
+  if (e.touches.length >= 2) touch0 = { pinch: touchDist(e.touches), z: zoomLvl };
+  else if (!touch0) touch0 = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: performance.now() };
 }, { passive: false });
 $('map').addEventListener('touchmove', e => {
   e.preventDefault();
-  if (!touch0) return;
-  if (touch0.pinch && e.touches.length === 2) { setZoom(touch0.z + Math.log2(touchDist(e.touches) / touch0.pinch)); return; }
-  if (touch0.pinch || touch0.done || e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - touch0.x, dy = e.touches[0].clientY - touch0.y;
-  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { steer(dx < 0 ? 'L' : 'R'); touch0.done = true; }
-  else if (dy < -40 && Math.abs(dy) > Math.abs(dx)) { steer('S'); touch0.done = true; }
+  if (touch0 && touch0.pinch && e.touches.length === 2) setZoom(touch0.z + Math.log2(touchDist(e.touches) / touch0.pinch));
+  if (touch0 && !touch0.pinch && e.touches.length === 1) { touch0.lx = e.touches[0].clientX; touch0.ly = e.touches[0].clientY; }
 }, { passive: false });
-$('map').addEventListener('touchend', e => { if (!e.touches.length) touch0 = null; });
+$('map').addEventListener('touchend', e => {
+  if (e.touches.length) return;
+  const t = touch0; touch0 = null;
+  if (!t || t.pinch || t.lx === undefined || performance.now() - t.t > 600) return;   // щипок или медленное движение — не поворот
+  const dx = t.lx - t.x, dy = t.ly - t.y;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) steer(dx < 0 ? 'L' : 'R');
+  else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.5) steer('S');
+});
+$('map').addEventListener('touchcancel', () => { touch0 = null; });
 
 // камера как в навигаторе: голова ниже центра, впереди видно больше дороги
 const applyPadding = () => map.setPadding({ top: Math.round(innerHeight * .3), bottom: 0, left: 0, right: 0 });
@@ -1010,6 +1074,16 @@ onBtn('zoomOut', () => setZoom(zoomLvl - .5));
 onBtn('faster', () => setMul(mulIdx + 1, true));
 onBtn('slower', () => setMul(mulIdx - 1, true));
 onBtn('hintBtn', () => setHint(!hintOn, true));
+function setTheme(t) {
+  if (t === theme) return;
+  theme = t; document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('routeSnakeTheme', t); } catch (e) {}
+  map.setStyle(MAP_STYLES[t], { diff: false });   // без diff приходит style.load, и слои змейки, маршрута и подсказки добавятся заново
+  if ($('themeToggle')) $('themeToggle').checked = t === 'dark';
+  track('theme', { theme: t });
+}
+onBtn('themeBtn', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
+$('themeToggle').addEventListener('change', e => setTheme(e.target.checked ? 'dark' : 'light'));
 setMuted(muted); setMul(mulIdx, false); setHint(hintOn, false);
 
 // ---------- пауза и меню ----------
@@ -1034,7 +1108,7 @@ function setPaused(p) {
 }
 function syncMenu() {
   $('speedRange').max = MULS.length - 1; $('speedRange').value = mulIdx; $('speedVal').textContent = '×' + MULS[mulIdx];
-  $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('menuName').value = nick;
+  $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
   $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
 $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
