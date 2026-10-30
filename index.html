@@ -234,6 +234,33 @@
   .account .codein { flex: 1; min-width: 0; font: 600 16px ui-monospace, Consolas, monospace; letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px;
                      border: 1px solid #ccc; border-radius: 8px; -webkit-user-select: text; user-select: text; }
   .card .account .codeform button, .grp .account .codeform button { width: auto; padding: 8px 14px; }
+  .gtab { flex: 1; border: 0; background: none; font: inherit; font-size: 15px; padding: 8px; border-radius: 8px; font-weight: 600; color: #555; cursor: pointer; }
+  .gtab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  [data-theme="dark"] .gtab { color: #a9aab0; }
+  [data-theme="dark"] .gtab.on { background: #34353b; color: var(--ink); }
+  .gbal { display: flex; align-items: center; gap: 4px; background: var(--card); border-radius: 10px; padding: 6px 10px; font-weight: 700; font-size: 15px; color: var(--ink); }
+  .gbal .ico { width: 18px; height: 18px; stroke: var(--green); }
+  .ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 8px; }
+  .gitem { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--card); border: 2px solid transparent; border-radius: 12px;
+           padding: 6px 6px 8px; cursor: pointer; font: inherit; color: var(--ink); }
+  .gitem.active { border-color: var(--green); }
+  .gitem svg { width: 100%; height: auto; border-radius: 8px; display: block; }
+  .gname { font-size: 13px; font-weight: 600; text-align: center; line-height: 1.2; }
+  .gtag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: #f1f1f1; color: #333; }
+  .gtag.on { background: var(--green); color: #fff; }
+  .gtag.rub { background: #e8f0fe; color: #1a5fc8; }
+  .gspares { grid-column: 1 / -1; background: var(--card); border-radius: 12px; padding: 16px; text-align: center; color: var(--ink); }
+  .gspares p { margin: 6px 0; font-size: 14px; color: var(--muted); }
+  .gspares b { color: var(--ink); font-size: 16px; }
+  .gbuy { margin-top: 8px; width: 100%; border: 0; border-radius: 12px; padding: 12px; font: inherit; font-weight: 700; background: #ffcc00; color: #1a1a1a; cursor: pointer; }
+  [data-theme="dark"] .gtag { background: #34353b; color: #ddd; }
+  [data-theme="dark"] .gtag.rub { background: #1f2f4a; color: #9cc0ff; }
+  .revive { display: flex; flex-direction: column; gap: 8px; }
+  .earned { font-size: 14px; color: var(--green); font-weight: 600; }
+  .earned:empty { display: none; }
+  .rlist .rev { color: #c47f45; font-size: 11px; margin-left: 4px; }
+  .blink-a { animation: blink2 .6s steps(1) infinite; } .blink-b { animation: blink2 .6s steps(1) infinite reverse; }
+  @keyframes blink2 { 50% { opacity: .15; } }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -377,6 +404,12 @@
     <label for="nameInput">Ник для таблицы рекордов</label>
     <div class="row"><input id="nameInput" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
   </div>
+  <p class="earned" id="earned"></p>
+  <div class="revive hidden" id="reviveBox">
+    <button id="reviveSpare">Поставить запаску</button>
+    <button class="ghost" id="reviveBuy">Купить запаску за 50 л и поехать</button>
+    <button class="link" id="reviveEnd">Закончить заезд</button>
+  </div>
   <p class="rank" id="rank"></p>
   <p class="codenote" id="codeNote"></p>
   <div class="account"></div>
@@ -402,6 +435,7 @@
       <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
     <div class="grp">
+      <button class="row" id="menuGarage"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M3 20V9l9-5 9 5v11"/><path d="M7 20v-7h10v7M7 16h10"/></svg></i><span>Гараж</span><b id="menuLiters">0 л</b><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="row" id="menuRecords"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></i><span>Рекорды</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="row" id="menuSigns"><i class="ri"></i><span>Знаки и их эффекты</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
@@ -414,6 +448,17 @@
       <p class="fullhint hidden" id="fullHint">На iPhone откройте игру в Safari, нажмите «Поделиться» → «На экран „Домой“» и запускайте с иконки: карта будет на весь экран без панелей.</p>
     </div>
     <p class="credits">Карта © OpenStreetMap, OpenFreeMap · Знаки ПДД: Wikimedia Commons (CC BY-SA / PD)</p>
+  </section>
+
+  <section class="page hidden" id="garage">
+    <header class="phead">
+      <button class="x" id="garageClose" aria-label="Назад"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Гараж</h2>
+      <span class="gbal" title="Литры бензина: 1 л за знак, 5 л за километр, 10 л за доезд до места"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v15M3 20h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3M7 8h4"/></svg><span id="gLiters">0</span> л</span>
+    </header>
+    <div class="tabs gtabs"><button class="gtab on" data-g="skins">Скины</button><button class="gtab" data-g="heads">Головы</button><button class="gtab" data-g="spares">Запаски</button></div>
+    <div class="ggrid" id="gGrid"></div>
+    <p class="credits">Литры: 1 л за знак, 5 л за километр, 10 л за доезд «Домой» или «На работу». Покупки за рубли появятся позже.</p>
   </section>
 
   <section class="page hidden" id="records">
@@ -552,7 +597,7 @@ function applySign(k) {
   if (e.force) setQueued(e.force);
   if (e.life && lives < LIVES_MAX) { lives++; renderLives(); }
   if (e.brick) {
-    bricks++;
+    bricks++; applySkin();
     if (bricks >= BRICKS_MAX) { gameOver('Три «кирпича»!'); return; }
   }
   if (e.pts < 0) SFX.slow(); else if (e.speed && e.speed[0] > 1) SFX.fast(); else if (e.speed || e.stop) SFX.slow(); else SFX.eat(Math.max(1, e.pts || 1));
@@ -594,6 +639,8 @@ map.on('style.load', () => {
     paint: { 'line-color': '#3c3c3c', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 7, 17, 20] } }, firstSymbol);
   map.addLayer({ id: 'body', type: 'line', source: 'body', layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': ['get', 'c'], 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 4.5, 17, 13] } }, firstSymbol);
+  map.addLayer({ id: 'body-top', type: 'line', source: 'body', layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' },
+    paint: { 'line-color': '#ffffff', 'line-width': 2 } }, firstSymbol);
   map.addSource('preview', { type: 'geojson', data: empty() });
   map.addLayer({ id: 'preview-case', type: 'line', source: 'preview', filter: ['==', '$type', 'LineString'], layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': '#1d4fd8', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 4, 17, 11] } }, firstSymbol);
@@ -607,6 +654,7 @@ map.on('style.load', () => {
     paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 6, 17, 16] } }, 'body-case');
   map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': '#7b5cff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 3.5, 17, 10] } }, 'body-case');
+  applySkin();
 });
 const empty = () => ({ type: 'FeatureCollection', features: [] });
 // в тёмном стиле OpenFreeMap дороги почти сливаются с фоном: делаем их и воду с парками заметнее
@@ -666,7 +714,7 @@ function reset() {
   map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
   traffic = pickTraffic(); sinceTraffic = 0;
   trail = [{ p: P[s], c: traffic }];
-  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0; lives = LIVES_MAX; renderLives();
+  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0; lives = LIVES_MAX; renderLives(); if (typeof garage !== 'undefined') applySkin();
   camB = brg(head.from, head.to);
   (foods || []).forEach(f => f.m.remove());
   foods = [];
@@ -831,7 +879,7 @@ function checkFood(hp) {
     const f = foods[j], d = dist(P[f.i], hp);
     if (d < EAT) {
       f.m.remove(); foods.splice(j, 1);
-      eaten++; speed = Math.min(MAX_SPEED, speed + 1.2);
+      eaten++; speed = Math.min(MAX_SPEED, speed + 1.2); addLiters(1);
       applySign(f.k);
       spawnFood();
     } else if (d > 1000) { f.m.remove(); foods.splice(j, 1); spawnFood(); }
@@ -1009,7 +1057,7 @@ function updateNav(hp) {
   if (!nav || !map.getSource('nav')) return;
   if (dist(hp, P[nav.node]) < 22) {
     track('route_arrive', { place: nav.key });
-    score += 5; SFX.arrive(); toast(PLACE_NAME[nav.key] + '! +5 очков');
+    score += 5; addLiters(10); SFX.arrive(); toast(PLACE_NAME[nav.key] + '! +5 очков');
     setNav(null); return;
   }
   if (!navDirty) { nav.coords[0] = toLL(hp[0], hp[1]); }
@@ -1075,7 +1123,7 @@ const TURN_ICON = {
 // заказанный поворот живёт 300 м: если подходящего съезда так и не нашлось, он отменяется,
 // а не срабатывает где-то далеко, когда о нём уже забыли
 const QUEUE_TTL = 300;
-let odo = 0, queuedAt = 0;
+let odo = 0, odo0 = 0, queuedAt = 0;
 // Впереди перекрёсток, где прямо ехать некуда, а поворот не заказан: мигаем значком,
 // иначе змейка выберет сторону сама и это выглядит как «самоуправление»
 let askShown = false;
@@ -1298,7 +1346,10 @@ $('fullBtn').onclick = () => {
   else $('fullHint').classList.remove('hidden');
   setTimeout(syncMenu, 300);
 };
-document.addEventListener('visibilitychange', () => { if (document.hidden && alive && !paused) setPaused(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && alive && !paused) setPaused(true);
+  if (document.hidden && !alive && !runFinished) finishRun();
+});
 // все знаки ПДД по группам; у знака без особого действия — обычный эффект
 const GROUP_NAMES = { 1: 'Предупреждающие', 2: 'Знаки приоритета', 3: 'Запрещающие', 4: 'Предписывающие', 5: 'Особых предписаний',
   6: 'Информационные', 7: 'Знаки сервиса', 8: 'Дополнительной информации (таблички)' };
@@ -1528,7 +1579,7 @@ function localScores() { try { return JSON.parse(localStorage.getItem('routeSnak
 function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
 const byScore = (a, b) => b.score - a.score || b.len - a.len;
 async function submitScore() {
-  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
+  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], revived: revivedThisRun, date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
   const list = [...localScores(), rec].sort(byScore);
   $('rank').textContent = score > 0 ? `${list.findIndex(r => r.id === rec.id) + 1}-е место в рекордах этого устройства` : '';
   if (score > 0) {
@@ -1560,7 +1611,7 @@ async function showRecords() {
   list = list.sort(byScore).slice(0, 30);
   const me = r => r.id === lastRecId || (recTab === 'all' && r.id && r.id === myRowId);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}${r.revived ? '<span class="rev">с запаской</span>' : ''}</small></span><span class="pts">${r.score}</span></li>`).join('')
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1582,6 +1633,190 @@ $('nameSave').onclick = () => {
 };
 $('nameInput').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('nameSave').click(); });
 renderAccount();
+
+// ---------- Гараж: литры, скины, головы, запаски ----------
+// Скин = цвета трёх линий змейки: обводка, основа и верхняя линия (блик, полосы, точки).
+// top.k — толщина верхней линии в долях основы; dash — штрихи в толщинах линии.
+// price: { l: литры } | { rub: рубли, пока не продаются } | null — бесплатно.
+const SKINS = [
+  { id: 'traffic', name: 'Пробки', price: null, case: '#3c3c3c' },
+  { id: 'bronze', name: 'Бронза', price: { l: 300 }, case: '#5e3517', main: '#c47f45', top: { c: '#f2c19a', k: .27 } },
+  { id: 'silver', name: 'Серебро', price: { l: 600 }, case: '#5d636b', main: '#bcc3cb', top: { c: '#ffffff', k: .27 } },
+  { id: 'gold', name: 'Золото', price: { rub: 149 }, case: '#8a5d0b', main: '#e8b53a', top: { c: '#fff0b8', k: .27 } },
+  { id: 'plat', name: 'Платина', price: { rub: 199 }, case: '#7d8796', main: '#dfe5ec', top: { c: '#ffffff', k: .35 } },
+  { id: 'glass', name: 'Стекло', price: { rub: 249 }, case: '#7d97b0', caseOp: .55, main: '#ffffff', mainOp: .5, top: { c: '#ffffff', k: .22, dash: [12, 5], op: .95 } },
+  { id: 'neon', name: 'Неон', price: { rub: 79 }, case: '#ff3dcb', main: '#00e5ff', top: { c: '#e8fdff', k: .22 } },
+  { id: 'tram', name: 'Ночной трамвай', price: { rub: 99 }, case: '#2b0c0c', main: '#b3261e', top: { c: '#ffd34d', k: .45, dash: [1.2, 1.2], cap: 'butt' } },
+  { id: 'zebra', name: 'Зебра', price: { l: 200 }, case: '#3a3a3a', main: '#ffffff', top: { c: '#1f1f1f', k: 1, dash: [.45, .45], cap: 'butt' } },
+  { id: 'marking', name: 'Разметка', price: { l: 200 }, case: '#2b2b2b', main: '#4a4d55', top: { c: '#ffffff', k: .22, dash: [3, 2.5], cap: 'butt' } },
+  { id: 'winter', name: 'Зима', price: { l: 300 }, case: '#7fb3e8', main: '#ffffff', top: { c: '#7fb3e8', k: .27, dash: [.1, 3] } },
+  { id: 'lava', name: 'Лава', price: { rub: 99 }, case: '#2a0a00', main: '#ff5a1f', top: { c: '#ffd166', k: .27, dash: [3, 2.5] } },
+  { id: 'melon', name: 'Арбуз', price: { l: 300 }, case: '#1f7a35', main: '#e8455a', top: { c: '#1a1a1a', k: .27, dash: [.1, 3.5] } },
+  { id: 'candy', name: 'Карамель', price: { rub: 79 }, case: '#b3261e', main: '#ffffff', top: { c: '#d62b25', k: 1, dash: [.4, .6], cap: 'butt' } },
+  { id: 'pixel', name: 'Пиксели', price: { l: 300 }, case: '#1a1a1a', main: '#26c6da', top: { c: '#ab47bc', k: 1, dash: [.6, .6], cap: 'butt' } },
+];
+// голова: стрелка навигатора разных материалов или транспорт (рисуется «носом» вверх)
+const ARROW_FACETS = { arrow: ['#ffe680', '#f5bd00', '#d99a00'], bronze: ['#f6cba5', '#c47f45', '#7f4a20'], silver: ['#ffffff', '#bcc3cb', '#78808a'],
+  gold: ['#fff1b8', '#e2b33c', '#9c7014'], plat: ['#ffffff', '#d6dde6', '#8f9bab'], neon: ['#9ffcff', '#00e5ff', '#ff3dcb'] };
+const arrowSvg = k => k === 'glass'
+  ? '<svg viewBox="0 0 40 40" width="44" height="44"><g stroke="#6f8aa3" stroke-width="1.2"><path d="M20 2L5 37L20 28Z" fill="#ffffff" fill-opacity=".6"/><path d="M20 2L20 28L35 37Z" fill="#cfe6ff" fill-opacity=".5"/></g><path d="M13 22L17 12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>'
+  : `<svg viewBox="0 0 40 40" width="44" height="44"><path d="M20 2L5 37L20 28Z" fill="${ARROW_FACETS[k][0]}"/><path d="M20 2L20 28L35 37Z" fill="${ARROW_FACETS[k][1]}"/><path d="M5 37L20 28L35 37L20 31.5Z" fill="${ARROW_FACETS[k][2]}"/></svg>`;
+const vehicle = inner => `<svg viewBox="-30 -40 60 80" width="34" height="46">${inner}</svg>`;
+const HEADS = [
+  { id: 'arrow', name: 'Стрелка', price: null, svg: arrowSvg('arrow') },
+  { id: 'a-bronze', name: 'Бронзовая стрелка', price: { l: 300 }, svg: arrowSvg('bronze') },
+  { id: 'a-silver', name: 'Серебряная стрелка', price: { l: 600 }, svg: arrowSvg('silver') },
+  { id: 'a-gold', name: 'Золотая стрелка', price: { rub: 99 }, svg: arrowSvg('gold') },
+  { id: 'a-plat', name: 'Платиновая стрелка', price: { rub: 149 }, svg: arrowSvg('plat') },
+  { id: 'a-glass', name: 'Стеклянная стрелка', price: { rub: 199 }, svg: arrowSvg('glass') },
+  { id: 'a-neon', name: 'Неоновая стрелка', price: { rub: 79 }, svg: arrowSvg('neon') },
+  { id: 'taxi', name: 'Такси', price: { l: 200 }, svg: vehicle('<rect x="-14" y="-28" width="28" height="56" rx="8" fill="#f7c21a" stroke="#3a3a3a" stroke-width="2"/><rect x="-10" y="-18" width="20" height="10" rx="2" fill="#2b2f36"/><rect x="-10" y="8" width="20" height="9" rx="2" fill="#2b2f36"/><g fill="#1a1a1a"><rect x="-10" y="-4" width="4" height="4"/><rect x="-2" y="-4" width="4" height="4"/><rect x="6" y="-4" width="4" height="4"/><rect x="-6" y="0" width="4" height="4"/><rect x="2" y="0" width="4" height="4"/></g>') },
+  { id: 'scooter', name: 'Самокат', price: { l: 200 }, svg: vehicle('<rect x="-3" y="-30" width="6" height="7" rx="2" fill="#2b2b2b"/><rect x="-3" y="23" width="6" height="7" rx="2" fill="#2b2b2b"/><rect x="-6" y="-18" width="12" height="40" rx="4" fill="#26a541" stroke="#14632a" stroke-width="2"/><path d="M-16 -22H16" stroke="#2b2b2b" stroke-width="4" stroke-linecap="round"/>') },
+  { id: 'bike', name: 'Велосипед', price: { l: 200 }, svg: vehicle('<g stroke="#2b2b2b" stroke-linecap="round"><path d="M0 -30V-16M0 16V30" stroke-width="5"/><path d="M0 -16V16" stroke="#1a73e8" stroke-width="4"/><path d="M-12 -18H12" stroke-width="3"/><circle cy="4" r="4" fill="#1a73e8" stroke-width="1.5"/></g>') },
+  { id: 'moto', name: 'Мотоцикл', price: { l: 400 }, svg: vehicle('<rect x="-3" y="-32" width="6" height="10" rx="2" fill="#2b2b2b"/><rect x="-3" y="22" width="6" height="10" rx="2" fill="#2b2b2b"/><path d="M0 -24Q10 -10 7 18H-7Q-10 -10 0 -24Z" fill="#d62b25" stroke="#3a3a3a" stroke-width="2"/><path d="M-14 -18H14" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round"/><circle cy="2" r="5" fill="#2b2b2b"/>') },
+  { id: 'bus', name: 'Автобус', price: { rub: 79 }, svg: vehicle('<rect x="-13" y="-38" width="26" height="76" rx="6" fill="#1a73e8" stroke="#3a3a3a" stroke-width="2"/><rect x="-9" y="-33" width="18" height="8" rx="2" fill="#2b2f36"/><g fill="#cfe6ff"><rect x="-9" y="-20" width="7" height="44" rx="2"/><rect x="2" y="-20" width="7" height="44" rx="2"/></g>') },
+  { id: 'tram-head', name: 'Трамвай', price: { rub: 79 }, svg: vehicle('<rect x="-12" y="-38" width="24" height="76" rx="10" fill="#c62828" stroke="#3a3a3a" stroke-width="2"/><g fill="#ffe08a"><rect x="-8" y="-26" width="16" height="7" rx="2"/><rect x="-8" y="-14" width="16" height="7" rx="2"/><rect x="-8" y="-2" width="16" height="7" rx="2"/><rect x="-8" y="10" width="16" height="7" rx="2"/></g>') },
+  { id: 'ambulance', name: 'Скорая', price: { rub: 99 }, svg: vehicle('<rect x="-15" y="-30" width="30" height="60" rx="7" fill="#ffffff" stroke="#3a3a3a" stroke-width="2"/><rect x="-11" y="-24" width="22" height="9" rx="2" fill="#2b2f36"/><rect class="blink-a" x="-11" y="-12" width="11" height="5" fill="#1a73e8"/><rect class="blink-b" x="0" y="-12" width="11" height="5" fill="#e53935"/><path d="M0 0V18M-9 9H9" stroke="#e53935" stroke-width="5"/>') },
+  { id: 'plow', name: 'Снегоуборщик', price: { rub: 79 }, svg: vehicle('<path d="M-24 -30L24 -30L18 -22L-18 -22Z" fill="#9aa0a6" stroke="#3a3a3a" stroke-width="2"/><rect x="-13" y="-20" width="26" height="50" rx="5" fill="#f57c00" stroke="#3a3a3a" stroke-width="2"/><rect x="-9" y="-14" width="18" height="9" rx="2" fill="#2b2f36"/>') },
+  { id: 'roller', name: 'Дорожный каток', price: { l: 400 }, svg: vehicle('<rect x="-18" y="-34" width="36" height="14" rx="6" fill="#8d9298" stroke="#3a3a3a" stroke-width="2"/><rect x="-12" y="-18" width="24" height="40" rx="5" fill="#ffc400" stroke="#3a3a3a" stroke-width="2"/><rect x="-8" y="-12" width="16" height="12" rx="2" fill="#2b2f36"/><rect x="-14" y="18" width="28" height="12" rx="5" fill="#2b2b2b"/>') },
+  { id: 'rocket', name: 'Ракета', price: { rub: 149 }, svg: vehicle('<path d="M0 -32Q11 -18 10 14H-10Q-11 -18 0 -32Z" fill="#ffffff" stroke="#3a3a3a" stroke-width="2"/><circle cy="-10" r="5" fill="#1a73e8" stroke="#3a3a3a" stroke-width="1.5"/><path d="M-10 6L-18 20L-10 16ZM10 6L18 20L10 16Z" fill="#d62b25"/><path d="M-6 16L0 32L6 16Z" fill="#f7a01a"/>') },
+];
+const SPARE_PRICE = 50;
+
+// состояние гаража хранится в браузере игрока
+let garage = { liters: 0, owned: ['traffic', 'arrow'], skin: 'traffic', head: 'arrow', spares: 0 };
+try { Object.assign(garage, JSON.parse(localStorage.getItem('routeSnakeGarage')) || {}); } catch (e) {}
+const saveGarage = () => { try { localStorage.setItem('routeSnakeGarage', JSON.stringify(garage)); } catch (e) {} };
+let runLiters = 0, kmPaid = 0;
+function addLiters(n) {
+  garage.liters += n; runLiters += n; saveGarage();
+}
+
+const W = (a, b) => ['interpolate', ['exponential', 2], ['zoom'], 15, a, 17, b];
+// красит линии змейки под выбранный скин; вызывается при смене скина, стиля карты и «кирпичах»
+function applySkin() {
+  if (!map.getLayer('body')) return;
+  const s = SKINS.find(x => x.id === garage.skin) || SKINS[0];
+  map.setPaintProperty('body-case', 'line-color', s.case);
+  map.setPaintProperty('body-case', 'line-opacity', s.caseOp ?? 1);
+  map.setPaintProperty('body', 'line-color', s.main ? redden(s.main) : ['get', 'c']);
+  map.setPaintProperty('body', 'line-opacity', s.mainOp ?? 1);
+  const t = s.top;
+  map.setLayoutProperty('body-top', 'visibility', t ? 'visible' : 'none');
+  if (!t) return;
+  map.setPaintProperty('body-top', 'line-color', t.c);
+  map.setPaintProperty('body-top', 'line-opacity', t.op ?? 1);
+  map.setPaintProperty('body-top', 'line-width', W(4.5 * t.k, 13 * t.k));
+  map.setPaintProperty('body-top', 'line-dasharray', t.dash || [1, 0]);
+  map.setLayoutProperty('body-top', 'line-cap', t.cap || 'round');
+}
+function applyHead() {
+  const h = HEADS.find(x => x.id === garage.head) || HEADS[0];
+  headEl.innerHTML = h.svg;
+}
+
+// маленькие картинки для витрины
+const MINI = 'M8 38H40Q50 38 50 28V22Q50 12 60 12H92';
+function skinMini(s) {
+  const dark = ['neon', 'tram', 'lava'].includes(s.id);
+  const bg = dark ? '#141518' : '#eef0e8';
+  let p = `<path d="${MINI}" fill="none" stroke="${s.case}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${s.caseOp ?? 1}"/>`;
+  p += s.main
+    ? `<path d="${MINI}" fill="none" stroke="${s.main}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${s.mainOp ?? 1}"/>`
+    : `<path d="${MINI}" fill="none" stroke="#e8453c" stroke-width="7" stroke-linecap="round"/><path d="${MINI}" fill="none" stroke="#3fb33f" stroke-width="7" pathLength="100" stroke-dasharray="0 30 55 15"/><path d="${MINI}" fill="none" stroke="#2f6fed" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="0 85 15 0"/>`;
+  if (s.top) {
+    const w = 7 * s.top.k, d = s.top.dash ? `stroke-dasharray="${s.top.dash.map(v => (v * w).toFixed(1)).join(' ')}"` : '';
+    p += `<path d="${MINI}" fill="none" stroke="${s.top.c}" stroke-width="${w}" stroke-linecap="${s.top.cap || 'round'}" stroke-linejoin="round" ${d} stroke-opacity="${s.top.op ?? 1}"/>`;
+  }
+  return `<svg viewBox="0 0 100 50"><rect width="100" height="50" fill="${bg}"/><path d="M0 12H100M0 38H100M50 0V50" stroke="${dark ? '#41444b' : '#fff'}" stroke-width="5"/>${p}</svg>`;
+}
+const headMini = h => `<svg viewBox="0 0 100 50"><rect width="100" height="50" fill="#eef0e8"/><path d="M50 0V50" stroke="#fff" stroke-width="16"/><g transform="translate(50 25) scale(.98) translate(-22 -23)">${h.svg.replace(/width="\d+" height="\d+"/, 'width="44" height="46"')}</g></svg>`;
+
+const priceTag = (it, owned, active) => active ? '<span class="gtag on">Выбрано</span>'
+  : owned ? '<span class="gtag">Надеть</span>'
+  : !it.price ? '<span class="gtag">Бесплатно</span>'
+  : it.price.l ? `<span class="gtag">${it.price.l} л</span>` : `<span class="gtag rub">${it.price.rub} ₽ · скоро</span>`;
+let garageTab = 'skins';
+function renderGarage() {
+  $('gLiters').textContent = garage.liters;
+  $('menuLiters').textContent = garage.liters + ' л';
+  document.querySelectorAll('.gtab').forEach(t => t.classList.toggle('on', t.dataset.g === garageTab));
+  if (garageTab === 'spares') {
+    $('gGrid').innerHTML = `<div class="gspares"><svg viewBox="0 0 40 40" width="56" height="56"><circle cx="20" cy="20" r="17" fill="#3a3a3a"/><circle cx="20" cy="20" r="11" fill="#9aa0a6"/><circle cx="20" cy="20" r="4" fill="#3a3a3a"/></svg>
+      <p><b>Запасок: ${garage.spares}</b></p><p>Запаска продолжает заезд после аварии с той же длиной и очками. Одна запаска за заезд.</p>
+      <button class="gbuy" data-buy="spare">Купить запаску за ${SPARE_PRICE} л</button></div>`;
+    return;
+  }
+  const list = garageTab === 'skins' ? SKINS : HEADS, kind = garageTab === 'skins' ? 'skin' : 'head';
+  $('gGrid').innerHTML = list.map(it => {
+    const owned = garage.owned.includes(it.id), active = garage[kind] === it.id;
+    return `<button class="gitem${active ? ' active' : ''}" data-kind="${kind}" data-id="${it.id}">${kind === 'skin' ? skinMini(it) : headMini(it)}<span class="gname">${it.name}</span>${priceTag(it, owned, active)}</button>`;
+  }).join('');
+}
+function buyOrEquip(kind, id) {
+  const it = (kind === 'skin' ? SKINS : HEADS).find(x => x.id === id);
+  if (!it) return;
+  if (!garage.owned.includes(id)) {
+    if (it.price && it.price.rub) { toast('Покупки за рубли появятся позже'); return; }
+    const cost = it.price ? it.price.l : 0;
+    if (garage.liters < cost) { toast(`Не хватает ${cost - garage.liters} л. Литры дают за знаки и поездки`); return; }
+    garage.liters -= cost; garage.owned.push(id);
+    track('garage_buy', { item: id, liters: cost });
+    toast(`«${it.name}» куплено`);
+  }
+  garage[kind] = id; saveGarage();
+  kind === 'skin' ? applySkin() : applyHead();
+  renderGarage();
+}
+$('gGrid').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.buy === 'spare') {
+    if (garage.liters < SPARE_PRICE) { toast(`Не хватает ${SPARE_PRICE - garage.liters} л`); return; }
+    garage.liters -= SPARE_PRICE; garage.spares++; saveGarage(); renderGarage();
+    track('garage_buy', { item: 'spare', liters: SPARE_PRICE });
+    toast('Запаска куплена'); return;
+  }
+  buyOrEquip(b.dataset.kind, b.dataset.id);
+});
+document.querySelectorAll('.gtab').forEach(t => t.onclick = () => { garageTab = t.dataset.g; renderGarage(); });
+$('menuGarage').onclick = () => { renderGarage(); showPage('garage', 'menu'); };
+$('garageClose').onclick = () => pageBack ? showPage(pageBack) : closePanel();
+applyHead(); renderGarage();
+
+// ---------- запаска: продолжить после аварии ----------
+let revivedThisRun = false, runFinished = true;
+const canRevive = () => !revivedThisRun && (garage.spares > 0 || garage.liters >= SPARE_PRICE);
+function showRevive() {
+  $('reviveBox').classList.remove('hidden');
+  $('reviveSpare').classList.toggle('hidden', garage.spares <= 0);
+  $('reviveSpare').textContent = `Поставить запаску (осталось ${garage.spares})`;
+  $('reviveBuy').classList.toggle('hidden', garage.spares > 0 || garage.liters < SPARE_PRICE);
+  $('reviveBuy').textContent = `Купить запаску за ${SPARE_PRICE} л и поехать`;
+}
+function revive(paid) {
+  if (paid) garage.liters -= SPARE_PRICE; else garage.spares--;
+  saveGarage();
+  revivedThisRun = true; alive = true; paused = false;
+  lives = Math.max(lives, 1); bricks = 0; lifeLostAt = odo; renderLives(); applySkin();
+  fx = [{ kind: 'shield', until: gameTime + 3000, k: '7.1' }];
+  closeOverlay('over'); $('reviveBox').classList.add('hidden');
+  if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .5);
+  track('revive', { paid: paid ? 1 : 0 });
+  toast('Запаска на месте, 3 секунды щита');
+}
+$('reviveSpare').onclick = () => revive(false);
+$('reviveBuy').onclick = () => revive(true);
+$('reviveEnd').onclick = () => finishRun();
+// результат заезда уходит в рекорды один раз: после отказа от запаски или сразу, если её нет
+function finishRun() {
+  if (runFinished) return;
+  runFinished = true;
+  $('reviveBox').classList.add('hidden');
+  $('earned').textContent = runLiters ? `Заработано: +${runLiters} л · в баке ${garage.liters} л` : '';
+  submitScore().then(rec => { lastRecId = rec.id; });
+  $('nameBox').classList.toggle('hidden', !!nick);
+}
 
 // ---------- цикл ----------
 let last = 0;
@@ -1605,6 +1840,7 @@ function frame(now) {
       if (move <= 0) break;
     }
     if (!alive) { requestAnimationFrame(frame); return; }
+    if (Math.floor((odo - odo0) / 1000) > kmPaid) { kmPaid++; addLiters(5); }
     renderFx();
     const hp = headPos(), b = brg(head.from, head.to);
     map.getSource('body').setData(bodyGeo);
@@ -1623,7 +1859,10 @@ function frame(now) {
 }
 function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
+  if (!runFinished) finishRun();          // ушли со страницы аварии, не выбрав запаску
   reset(); alive = true; paused = false;
+  runLiters = 0; kmPaid = 0; odo0 = odo; revivedThisRun = false; runFinished = true;
+  $('earned').textContent = ''; $('reviveBox').classList.add('hidden');
   ['start', 'over'].forEach(closeOverlay); closePanel();
   $('rank').textContent = ''; $('codeNote').textContent = '';
   audioInit(); SFX.start();
@@ -1640,8 +1879,9 @@ function gameOver(reason = 'Авария!') {
   if (map.getSource('preview')) map.getSource('preview').setData(empty());
   fx = []; renderFx();
   $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м.`;
-  submitScore().then(rec => { lastRecId = rec.id; });
-  $('nameBox').classList.toggle('hidden', !!nick);
+  $('earned').textContent = runLiters ? `Заработано: +${runLiters} л · в баке ${garage.liters} л` : '';
+  runFinished = false;
+  if (canRevive()) { showRevive(); $('nameBox').classList.add('hidden'); } else finishRun();
   $('over').classList.remove('hidden');
 }
 $('again').onclick = start;
