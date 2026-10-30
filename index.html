@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Змейка-маршрут</title>
-<meta name="theme-color" content="#f3efe6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -17,10 +16,10 @@
           --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px);
           --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px);
           --gap: 14px; --btn: 48px; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #f3efe6; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f8f4f0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
                overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-  body { position: fixed; inset: 0; }
-  #map { position: absolute; inset: 0; touch-action: none; }
+  /* карта во весь экран телефона, в том числе под полупрозрачными панелями браузера */
+  #map { position: fixed; left: 0; right: 0; top: 0; height: 100%; height: 100lvh; touch-action: none; }
   button { touch-action: manipulation; font: inherit; color: inherit; }
   .ico { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
   .top { position: absolute; top: calc(var(--gap) + var(--st)); left: calc(var(--gap) + var(--sl)); display: flex; gap: 10px; align-items: center; z-index: 12; }
