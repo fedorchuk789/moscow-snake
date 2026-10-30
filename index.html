@@ -70,8 +70,8 @@
   .pin { width: 38px; height: 38px; border-radius: 50%; background: var(--route); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; }
   .pin svg { width: 20px; height: 20px; fill: #fff; }
   .toast { position: absolute; top: calc(var(--gap) + var(--st) + var(--btn) + 14px); left: 50%; transform: translateX(-50%); background: rgba(26,26,26,.85); color: #fff;
-           font-size: 14px; padding: 8px 14px; border-radius: 10px; z-index: 13; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; max-width: 90vw;
-           overflow: hidden; text-overflow: ellipsis; }
+           font-size: 14px; padding: 8px 14px; border-radius: 10px; z-index: 13; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: min(90vw, 420px); width: max-content;
+           text-align: center; line-height: 1.35; }
   .toast.on { opacity: 1; }
   #turn { position: absolute; top: calc(var(--gap) + var(--st)); left: 50%; transform: translateX(-50%); z-index: 12; width: 56px; height: 56px; border-radius: 14px;
           background: var(--blue); box-shadow: var(--shadow); display: grid; place-items: center; opacity: 0; transition: opacity .15s; pointer-events: none; }
@@ -152,6 +152,52 @@
   .card button.google svg { width: 20px; height: 20px; flex: none; }
   .card button.link { background: none; font-size: 14px; font-weight: 500; color: var(--muted); padding: 4px; }
   .card .anonNote { font-size: 12px; color: var(--muted); }
+  /* меню в стиле 2ГИС: серая панель, белые группы строк, серые иконки, шевроны */
+  .panel { position: fixed; inset: 0; z-index: 25; display: flex; background: rgba(20,24,30,.35); }
+  .sheet { background: #f0f0f0; width: 380px; max-width: 100%; height: 100%; overflow-y: auto; box-sizing: border-box; overscroll-behavior: contain;
+           padding: calc(12px + var(--st)) 12px calc(16px + var(--sb)) calc(12px + var(--sl)); box-shadow: 4px 0 24px rgba(0,0,0,.18); }
+  .page { display: flex; flex-direction: column; gap: 12px; }
+  .phead { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+  .phead h2 { margin: 0; font-size: 24px; font-weight: 800; color: var(--ink); flex: 1; }
+  .brand { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.3px; }
+  .brand svg { width: 38px; height: 38px; }
+  .x { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #e2e2e2; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .x .ico { width: 22px; height: 22px; stroke: #555; }
+  .grp { background: #fff; border-radius: 14px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 14px 0 16px; margin: 0; border: 0; background: none;
+         box-sizing: border-box; font-size: 17px; color: var(--ink); text-align: left; position: relative; cursor: pointer; }
+  .row + .row::before, .row + .fullhint::before { content: ''; position: absolute; top: 0; left: 54px; right: 0; height: 1px; background: #e6e6e6; }
+  @media (hover: hover) { button.row:hover { background: #f8f8f8; } }
+  button.row:active { background: #f2f2f2; }
+  .ri { width: 24px; flex: none; display: grid; place-items: center; font-style: normal; }
+  .ri .ico { stroke: #a3a3a3; }
+  .row > span { flex: 1; min-width: 0; }
+  .row b { font-weight: 600; color: #777; font-variant-numeric: tabular-nums; }
+  .row .chev { width: 20px; height: 20px; stroke: #b8b8b8; }
+  .row .kbd { font-size: 12px; color: #9a9a9a; border: 1px solid #ddd; border-radius: 6px; padding: 1px 6px; }
+  @media (hover: none) { .row .kbd { display: none; } }
+  .row.slide { min-height: 44px; cursor: default; }
+  .row.slide input { flex: 1; accent-color: var(--blue); margin: 0 4px 10px 0; }
+  .row.slide::before { display: none; }
+  .row.tall { min-height: 0; padding-top: 12px; padding-bottom: 12px; align-items: flex-start; cursor: default; }
+  .row.tall .ri { padding-top: 2px; }
+  .row input:not([type]) { font: inherit; font-size: 16px; padding: 7px 9px; border: 1px solid #ddd; border-radius: 8px; width: 46%; min-width: 0; text-align: right;
+                           -webkit-user-select: text; user-select: text; }
+  .grp .account { flex: 1; background: none; padding: 0; font-size: 14px; color: #555; }
+  .grp .account button { width: 100%; border: 0; border-radius: 10px; font-size: 15px; font-weight: 700; padding: 11px; cursor: pointer; }
+  .grp .account button.google { background: var(--blue); color: #fff; }
+  .grp .account button.ghost { background: #f1f1f1; color: var(--ink); }
+  .fullhint { position: relative; margin: 0; padding: 12px 16px 14px 54px; font-size: 14px; color: #555; line-height: 1.4; }
+  .page .tabs { background: #e2e2e2; }
+  .page .tab { flex: 1; border: 0; background: none; font-size: 15px; padding: 8px; border-radius: 8px; font-weight: 600; color: #555; cursor: pointer; }
+  .page .tab.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .page .rlist { padding: 4px 12px; }
+  .page .rlist li:last-child { border-bottom: 0; }
+  .page .slist { padding: 6px 14px; gap: 0; }
+  .page .srow { padding: 9px 0; border-bottom: 1px solid #eee; }
+  .page .srow:last-child { border-bottom: 0; }
+  .page .credits { margin: 0; }
+  @media (max-width: 640px) { .sheet { width: 100%; box-shadow: none; } }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -247,41 +293,59 @@
   <button id="again">Ещё раз</button>
   <button class="ghost" id="overRecords">Рекорды</button>
 </div></div>
-<div class="overlay hidden" id="menu"><div class="card menu">
-  <h1>Пауза</h1>
-  <button id="resume">Продолжить</button>
-  <div class="mrow">
-    <span>Скорость</span>
-    <input type="range" id="speedRange" min="0" max="1" step="1" aria-label="Скорость змейки">
-    <b id="speedVal">×1</b>
-  </div>
-  <label class="mrow" for="soundToggle"><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
-  <label class="mrow" for="hintToggle"><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
-  <div class="account"></div>
-  <div class="mrow"><span>Ник</span><input id="menuName" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></div>
-  <div class="mbtns">
-    <button class="ghost" id="menuRecords">Рекорды</button>
-    <button class="ghost" id="menuSigns">Знаки</button>
-    <button class="ghost" id="fullBtn">Во весь экран</button>
-    <button class="ghost" id="restart">Заново</button>
-  </div>
-  <p class="fullhint hidden" id="fullHint">На iPhone: в Safari нажмите «Поделиться» → «На экран „Домой“» и запускайте игру с иконки — будет весь экран без панелей.</p>
-  <p class="credits">Карта © OpenStreetMap, OpenFreeMap · Знаки ПДД: Wikimedia Commons (CC BY-SA / PD)</p>
-</div></div>
-<div class="overlay hidden" id="records"><div class="card menu">
-  <h1>Рекорды</h1>
-  <div class="tabs"><button class="tab on" data-tab="all">Все</button><button class="tab" data-tab="mine">Мои</button></div>
-  <ol class="rlist" id="rlist"></ol>
-  <div class="account"></div>
-  <p class="credits" id="syncNote"></p>
-  <button id="recordsClose">Закрыть</button>
-</div></div>
-<div class="overlay hidden" id="signsInfo"><div class="card menu">
-  <h1>Знаки с эффектами</h1>
-  <div class="slist" id="slist"></div>
-  <p class="credits">Остальные знаки ПДД дают +1 очко и удлиняют змейку.</p>
-  <button id="signsClose">Закрыть</button>
-</div></div>
+<div class="panel hidden" id="panel">
+<aside class="sheet" aria-label="Меню игры">
+  <section class="page" id="menu">
+    <header class="phead">
+      <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L5 37 L20 28 Z" fill="#ffe680"/><path d="M20 2 L20 28 L35 37 Z" fill="#f5bd00"/><path d="M5 37 L20 28 L35 37 L20 31.5 Z" fill="#d99a00"/></svg>Змейка</div>
+      <button class="x" id="resume" aria-label="Закрыть меню"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <div class="grp">
+      <button class="row" id="resumeRow"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></svg></i><span>Продолжить</span><small class="kbd">Esc</small></button>
+      <button class="row" id="restart"><i class="ri"></i><span>Начать заново</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="grp">
+      <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span><b id="speedVal">×1</b></div>
+      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0" max="1" step="1" aria-label="Скорость змейки"></div>
+      <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
+      <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
+    </div>
+    <div class="grp">
+      <button class="row" id="menuRecords"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></i><span>Рекорды</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="row" id="menuSigns"><i class="ri"></i><span>Знаки и их эффекты</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="grp">
+      <div class="row tall"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></i><div class="account"></div></div>
+      <label class="row" for="menuName"><i class="ri"></i><span>Ник</span><input id="menuName" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></label>
+    </div>
+    <div class="grp">
+      <button class="row" id="fullBtn"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></i><span id="fullLabel">Во весь экран</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <p class="fullhint hidden" id="fullHint">На iPhone откройте игру в Safari, нажмите «Поделиться» → «На экран „Домой“» и запускайте с иконки: карта будет на весь экран без панелей.</p>
+    </div>
+    <p class="credits">Карта © OpenStreetMap, OpenFreeMap · Знаки ПДД: Wikimedia Commons (CC BY-SA / PD)</p>
+  </section>
+
+  <section class="page hidden" id="records">
+    <header class="phead">
+      <button class="x" id="recordsClose" aria-label="Назад"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Рекорды</h2>
+    </header>
+    <div class="tabs"><button class="tab on" data-tab="all">Все</button><button class="tab" data-tab="mine">Мои</button></div>
+    <div class="grp"><ol class="rlist" id="rlist"></ol></div>
+    <div class="grp"><div class="row tall"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></i><div class="account"></div></div></div>
+    <p class="credits" id="syncNote"></p>
+  </section>
+
+  <section class="page hidden" id="signsInfo">
+    <header class="phead">
+      <button class="x" id="signsClose" aria-label="Назад"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Знаки и их эффекты</h2>
+    </header>
+    <div class="grp"><div class="slist" id="slist"></div></div>
+    <p class="credits">Остальные знаки ПДД дают +1 очко и удлиняют змейку на 45 м.</p>
+  </section>
+</aside>
+</div>
 
 <script>
 // ---------- граф дорог (OSM) в локальных метрах ----------
@@ -371,6 +435,7 @@ function renderFx() {
   headEl.classList.toggle('shield', fxActive('shield'));
 }
 function applySign(k) {
+  track('sign_eaten', { sign: k });
   const e = effectOf(k) || {};
   score = Math.max(0, score + (e.pts ?? 1));
   if (e.shrink) bodyLen = Math.max(START_LEN, bodyLen - e.shrink); else bodyLen += e.grow || GROW;
@@ -678,9 +743,9 @@ function setMuted(m) {
 const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5];
 let mulIdx = MULS.indexOf(1), toastT;
 try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
-function toast(text) {
+function toast(text, ms = 1400) {
   $('toast').textContent = text; $('toast').classList.add('on');
-  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 1400);
+  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), Math.max(ms, text.length * 45));
 }
 function setMul(i, show) {
   mulIdx = Math.max(0, Math.min(MULS.length - 1, i));
@@ -764,12 +829,14 @@ function setNav(key) {
     nav = { key, node, marker: new maplibregl.Marker({ element: el }).setLngLat(NODES[node]).addTo(map) };
     navDirty = true;
     toast('Маршрут: ' + places[key].addr);
+    track('route_set', { place: key });
   }
   renderPlaces();
 }
 function updateNav(hp) {
   if (!nav || !map.getSource('nav')) return;
   if (dist(hp, P[nav.node]) < 22) {
+    track('route_arrive', { place: nav.key });
     score += 5; SFX.arrive(); toast(PLACE_NAME[nav.key] + '! +5 очков');
     setNav(null); return;
   }
@@ -914,20 +981,30 @@ setMuted(muted); setMul(mulIdx, false); setHint(hintOn, false);
 let paused = false;
 function openOverlay(id) { $(id).classList.remove('hidden'); }
 function closeOverlay(id) { $(id).classList.add('hidden'); }
+// меню — боковая панель со страницами: главная, рекорды, знаки
+let pageBack = 'menu';
+function showPage(id, back = 'menu') {
+  pageBack = back;
+  $('panel').classList.remove('hidden');
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('hidden', p.id !== id));
+  $('panel').querySelector('.sheet').scrollTop = 0;
+}
+function closePanel() { $('panel').classList.add('hidden'); }
+$('panel').addEventListener('click', e => { if (e.target === $('panel')) { closePanel(); if (paused) setPaused(false); } });
 function setPaused(p) {
   if (!alive) p = false;
   paused = p;
   if (pad && AC) pad.g.gain.setTargetAtTime(p || !alive ? 0 : .035, AC.currentTime, .2);
-  if (p) { syncMenu(); openOverlay('menu'); } else { ['menu', 'records', 'signsInfo'].forEach(closeOverlay); }
+  if (p) { syncMenu(); showPage('menu'); track('pause'); } else closePanel();
 }
 function syncMenu() {
   $('speedRange').max = MULS.length - 1; $('speedRange').value = mulIdx; $('speedVal').textContent = '×' + MULS[mulIdx];
   $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('menuName').value = nick;
-  $('fullBtn').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
+  $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
-$('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), openOverlay('menu')); });
-$('resume').onclick = () => { closeOverlay('menu'); setPaused(false); };
-$('restart').onclick = () => { ['menu', 'over'].forEach(closeOverlay); start(); };
+$('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
+$('resume').onclick = $('resumeRow').onclick = () => { closePanel(); setPaused(false); };
+$('restart').onclick = () => { closePanel(); closeOverlay('over'); start(); };
 $('speedRange').addEventListener('input', e => { setMul(+e.target.value, false); $('speedVal').textContent = '×' + MULS[mulIdx]; });
 $('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
 $('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
@@ -949,9 +1026,9 @@ $('menuSigns').onclick = () => {
   const seen = new Set();
   $('slist').innerHTML = CATALOG.filter(s => { const e = effectOf(s.k); if (!e || seen.has(e.text)) return false; seen.add(e.text); return true; })
     .map(s => `<div class="srow"><img src="signs/${s.k}.svg" alt=""><div><b>${s.k} ${s.n}</b>${effectOf(s.k).text}</div></div>`).join('');
-  openOverlay('signsInfo');
+  showPage('signsInfo');
 };
-$('signsClose').onclick = () => closeOverlay('signsInfo');
+$('signsClose').onclick = () => showPage('menu');
 
 // ---------- рекорды: в браузере + общая таблица в Firebase ----------
 // Ключи Firebase не секретные: доступ к данным ограничивают правила Firestore
@@ -962,6 +1039,7 @@ const FIREBASE_CONFIG = {
   storageBucket: 'snake-maps.firebasestorage.app',
   messagingSenderId: '695059988492',
   appId: '1:695059988492:web:638f14758f050cc06e6e29',
+  measurementId: 'G-RW49QXLYPW',
 };
 const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 let db = null, fbUser = null, fbReady = null;
@@ -969,9 +1047,10 @@ const loadScript = src => new Promise((ok, fail) => { const s = document.createE
 // SDK грузим после старта страницы, чтобы не тормозить открытие игры
 function initFirebase() {
   fbReady ||= (async () => {
-    for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(FB_SDK + f);
+    for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js', 'firebase-analytics-compat.js']) await loadScript(FB_SDK + f);
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
+    try { analytics = firebase.analytics(); pendingEvents.splice(0).forEach(([n, p]) => analytics.logEvent(n, p)); } catch (e) {}
     firebase.auth().onAuthStateChanged(u => {
       fbUser = u;
       if (u && !nick && u.displayName) setNick(u.displayName.split(' ')[0]);
@@ -981,7 +1060,16 @@ function initFirebase() {
   })().catch(e => { fbReady = null; throw e; });
   return fbReady;
 }
-setTimeout(() => initFirebase().catch(() => renderAccount()), 1500);
+// грузим сразу: на iPhone окно входа Google можно открыть только в момент нажатия,
+// поэтому к нажатию SDK уже должен быть готов
+initFirebase().catch(() => renderAccount());
+
+// ---------- аналитика (Google Analytics через Firebase) ----------
+let analytics = null;
+const pendingEvents = [];
+function track(name, params = {}) {
+  try { analytics ? analytics.logEvent(name, params) : pendingEvents.length < 50 && pendingEvents.push([name, params]); } catch (e) {}
+}
 
 const REMOTE = {
   async load() {
@@ -1021,17 +1109,27 @@ async function uploadLocalBest() {
   const list = localScores(); list.forEach(r => { r.synced = true; }); saveLocalScores(list);
 }
 
+// Встроенные браузеры приложений (Telegram, Instagram, VK…) Google для входа не пускает
+const inAppBrowser = /Telegram|FBAN|FBAV|Instagram|VKClient|; wv\)/i.test(navigator.userAgent);
+const SIGNIN_ERRORS = {
+  'auth/popup-blocked': 'Браузер заблокировал окно входа. Нажмите кнопку ещё раз',
+  'auth/configuration-not-found': 'Вход через Google ещё не включён в настройках Firebase',
+  'auth/unauthorized-domain': 'Этот адрес сайта не разрешён в настройках Firebase',
+  'auth/network-request-failed': 'Нет связи с Google. Проверьте интернет',
+  'auth/web-storage-unsupported': 'Браузер блокирует вход. Откройте игру в Safari или Chrome',
+  'auth/operation-not-supported-in-this-environment': 'Здесь вход не работает. Откройте игру в Safari или Chrome',
+};
 async function signIn() {
+  if (inAppBrowser) { toast('Вход не работает во встроенном браузере. Откройте игру в Safari или Chrome', 5000); return; }
+  // окно Google открываем сразу, без ожиданий: иначе iPhone посчитает его рекламным и заблокирует
+  if (!window.firebase || !firebase.apps.length) { toast('Подключаюсь к Google, нажмите ещё раз через секунду'); initFirebase().catch(() => {}); return; }
   try {
-    await initFirebase();
-    const provider = new firebase.auth.GoogleAuthProvider();
-    try { await firebase.auth().signInWithPopup(provider); }
-    catch (e) {
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await firebase.auth().signInWithRedirect(provider);
-      else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') throw e;
-    }
+    await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    track('login', { method: 'Google' });
   } catch (e) {
-    toast(/disallowed|web-storage|unauthorized/i.test(e.code + e.message) ? 'Вход не работает в этом браузере. Откройте игру в Safari или Chrome' : 'Не удалось войти: ' + (e.code || e.message));
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
+    toast(SIGNIN_ERRORS[e.code] || 'Не удалось войти: ' + (e.code || e.message), 5000);
+    track('login_error', { code: String(e.code || 'unknown').slice(0, 90) });
   }
 }
 function signOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
@@ -1071,12 +1169,13 @@ async function submitScore() {
 }
 let lastRecId = null, recTab = 'all';
 async function showRecords() {
-  openOverlay('records');
+  showPage('records', $('panel').classList.contains('hidden') ? null : 'menu');
   renderAccount();
   $('rlist').innerHTML = '<li class="emptyrow">Загружаю…</li>';
   let list = null, note = '';
   try {
-    list = recTab === 'all' ? await REMOTE.load() : await REMOTE.mine();
+    const timeout = new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 8000));
+    list = await Promise.race([recTab === 'all' ? REMOTE.load() : REMOTE.mine(), timeout]);
     note = recTab === 'all' ? 'Общая таблица: лучший результат каждого игрока.' : 'Ваши игры на всех устройствах.';
   } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
   if (!list) {
@@ -1096,7 +1195,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
 });
 $('menuRecords').onclick = showRecords;
 $('overRecords').onclick = showRecords;
-$('recordsClose').onclick = () => closeOverlay('records');
+$('recordsClose').onclick = () => pageBack ? showPage(pageBack) : closePanel();
 $('nameSave').onclick = () => {
   const v = $('nameInput').value.trim();
   if (!v) { $('nameInput').focus(); return; }
@@ -1137,14 +1236,16 @@ function frame(now) {
 function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   reset(); alive = true; paused = false;
-  ['start', 'over', 'menu', 'records', 'signsInfo'].forEach(closeOverlay);
+  ['start', 'over'].forEach(closeOverlay); closePanel();
   $('rank').textContent = '';
   audioInit(); SFX.start();
+  track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx] });
   if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
 }
 function gameOver() {
   alive = false;
   SFX.crash();
+  track('game_over', { score, eaten, length: Math.round(bodyLen), seconds: Math.round(gameTime / 1000) });
   if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
   if (map.getSource('preview')) map.getSource('preview').setData(empty());
   fx = []; renderFx();
