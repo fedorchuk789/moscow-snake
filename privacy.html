@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Политика конфиденциальности — Змейка-маршрут</title>
+<link rel="icon" href="icon-192.png">
+<style>
+  :root { --ink: #1a1a1a; --muted: #6b6b6b; --line: #e6e6e6; --bg: #f0f0f0; --card: #fff; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); }
+  .card { background: var(--card); border-radius: 14px; padding: 20px 22px; margin-top: 12px; }
+  h1 { font-size: 26px; margin: 8px 0 4px; }
+  h2 { font-size: 18px; margin: 0 0 8px; }
+  p, li { margin: 6px 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  a { color: #1a73e8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Политика конфиденциальности</h1>
+  <p class="muted">Игра «Змейка-маршрут» · действует с 30 октября 2026 г.</p>
+
+  <section class="card">
+    <h2>Кратко</h2>
+    <p>Игра не требует регистрации. Мы собираем только то, что нужно для таблицы рекордов и для улучшения игры. Мы не продаём данные и не показываем рекламу.</p>
+  </section>
+
+  <section class="card">
+    <h2>Что хранится на вашем устройстве</h2>
+    <ul>
+      <li>Ваши рекорды, ник, код игрока и настройки (скорость, звук, масштаб).</li>
+      <li>Адреса «Домой» и «На работу», если вы их ввели. Они не отправляются нам и хранятся только в браузере или приложении на этом устройстве.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Что отправляется на сервер</h2>
+    <ul>
+      <li><b>Таблица рекордов</b> (Google Firebase): ник, очки, число знаков, длина змейки, скорость и дата игры.</li>
+      <li><b>Вход через Google</b> (по желанию): Firebase получает ваш идентификатор Google-аккаунта, имя и адрес почты. В таблице рекордов показывается только ник или имя.</li>
+      <li><b>Код игрока</b> (если вы играете без входа): сохраняется вместе с вашими результатами, чтобы вы могли открыть их на другом устройстве.</li>
+      <li><b>Аналитика</b> (Google Analytics для Firebase): обезличенные события вроде «начало игры», «конец игры», «съеден знак», а также тип устройства и примерная страна.</li>
+      <li><b>Поиск адреса</b>: введённый адрес отправляется в сервис Nominatim (OpenStreetMap), чтобы найти его на карте.</li>
+      <li><b>Карта</b>: фрагменты карты загружаются с серверов OpenFreeMap.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Удаление данных</h2>
+    <p>Чтобы удалить свои результаты из таблицы рекордов, оставьте запрос на странице <a href="https://github.com/fedorchuk789/moscow-snake/issues">обратной связи</a> и укажите ник (код игрока туда писать не нужно, достаточно ника и даты игры). Данные на устройстве удаляются вместе с данными сайта или удалением приложения.</p>
+  </section>
+
+  <section class="card">
+    <h2>Дети</h2>
+    <p>Игра не предназначена для сбора данных детей младше 13 лет. Ребёнок может играть без входа и без ввода адресов.</p>
+  </section>
+
+  <p class="muted">Вопросы по этой политике: <a href="https://github.com/fedorchuk789/moscow-snake/issues">обратная связь</a> · <a href="./">Вернуться в игру</a></p>
+</main>
+</body>
+</html>
