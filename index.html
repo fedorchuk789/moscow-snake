@@ -554,9 +554,9 @@ function applySign(k) {
 // ---------- карта ----------
 const RASTER_STYLE = { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } },
   layers: [{ id: 'osm', type: 'raster', source: 'osm' }] };
-// ---------- тема: светлая или тёмная, по умолчанию как в системе ----------
+// ---------- тема: светлая или тёмная, по умолчанию светлая ----------
 const MAP_STYLES = { light: 'https://tiles.openfreemap.org/styles/liberty', dark: 'https://tiles.openfreemap.org/styles/dark' };
-let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+let theme = 'light';   // по умолчанию светлая; тёмная — только если игрок выбрал её сам
 try { const t = localStorage.getItem('routeSnakeTheme'); if (MAP_STYLES[t]) theme = t; } catch (e) {}
 document.documentElement.dataset.theme = theme;
 if (theme === 'dark') document.querySelector('meta[name=theme-color]').content = '#232428';
