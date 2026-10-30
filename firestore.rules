@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function validGame(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 24
+        && d.score is int && d.score >= 0 && d.score <= 100000
+        && d.eaten is int && d.eaten >= 0
+        && d.len is int && d.len >= 0
+        && d.speed is number && d.speed > 0 && d.speed <= 10
+        && d.date is string && d.date.size() <= 10;
+    }
+
+    // Общая таблица: у каждого игрока одна строка — его лучший результат, и он только растёт.
+    // Строка «uid» — игрок вошёл через Google; строка «a_<sha256 кода>» — игрок без входа, по коду.
+    match /scores/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'score', 'eaten', 'len', 'speed', 'date', 'kind'])
+        && validGame(request.resource.data)
+        && (resource == null || request.resource.data.score >= resource.data.score)
+        && (
+          (request.auth != null && id == request.auth.uid && request.resource.data.kind == 'google')
+          || (id.matches('a_[0-9a-f]{64}') && request.resource.data.kind == 'code'
+              // пишется только в одном пакете с документом anon/<хэш>, который подтверждён кодом
+              && getAfter(/databases/$(database)/documents/anon/$(id.split('_')[1])).data.updatedAt == request.time)
+        );
+    }
+
+    // История игр вошедшего через Google: видит только он сам, с любого устройства.
+    match /users/{uid}/games/{game} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid && validGame(request.resource.data);
+    }
+
+    // Игрок без входа: документ называется sha256 от его кода. Открыть его можно, только зная код,
+    // а записать — только приложив сам код, хэш которого совпадает с именем документа.
+    match /anon/{h} {
+      allow get: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['code', 'games', 'best', 'name', 'updatedAt'])
+        && request.resource.data.code is string && request.resource.data.code.size() == 12
+        && hashing.sha256(request.resource.data.code).toHexString().lower() == h
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.games is list && request.resource.data.games.size() <= 50
+        && request.resource.data.best is int && request.resource.data.name is string;
+    }
+  }
+}

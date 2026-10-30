@@ -198,6 +198,17 @@
   .page .srow:last-child { border-bottom: 0; }
   .page .credits { margin: 0; }
   @media (max-width: 640px) { .sheet { width: 100%; box-shadow: none; } }
+  #over .card { max-height: 100%; overflow-y: auto; }
+  #over .account [data-act=havecode] { display: none; }
+  .codenote { font-size: 13px; color: #555; line-height: 1.4; }
+  .codenote:empty { display: none; }
+  .account .code { display: flex; align-items: center; gap: 10px; }
+  .account .code b { flex: 1; min-width: 0; white-space: nowrap; font: 700 16px/1.2 ui-monospace, Consolas, monospace; letter-spacing: .5px; color: var(--ink); -webkit-user-select: all; user-select: all; }
+  .card .account .code button, .grp .account .code button { width: auto; padding: 8px 12px; }
+  .account .codeform { display: flex; gap: 8px; }
+  .account .codein { flex: 1; min-width: 0; font: 600 16px ui-monospace, Consolas, monospace; letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px;
+                     border: 1px solid #ccc; border-radius: 8px; -webkit-user-select: text; user-select: text; }
+  .card .account .codeform button, .grp .account .codeform button { width: auto; padding: 8px 14px; }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -289,6 +300,7 @@
     <div class="row"><input id="nameInput" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
   </div>
   <p class="rank" id="rank"></p>
+  <p class="codenote" id="codeNote"></p>
   <div class="account"></div>
   <button id="again">Ещё раз</button>
   <button class="ghost" id="overRecords">Рекорды</button>
@@ -740,7 +752,7 @@ function setMuted(m) {
 }
 
 // ---------- скорость змейки ----------
-const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5];
+const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10];
 let mulIdx = MULS.indexOf(1), toastT;
 try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
 function toast(text, ms = 1400) {
@@ -1071,6 +1083,30 @@ function track(name, params = {}) {
   try { analytics ? analytics.logEvent(name, params) : pendingEvents.length < 50 && pendingEvents.push([name, params]); } catch (e) {}
 }
 
+// Кто пишет в общую таблицу: вошедший через Google (строка = uid)
+// или игрок без входа по секретному коду (строка = «a_» + sha256 кода).
+// Код знает только сам игрок, правила Firestore проверяют его хэш.
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // без 0/O и 1/I, чтобы не путать
+let playerCode = '';
+try { playerCode = localStorage.getItem('routeSnakeCode') || ''; } catch (e) {}
+const normCode = c => String(c).toUpperCase().replace(/[^A-Z0-9]/g, '');
+const prettyCode = c => normCode(c).match(/.{1,4}/g).join('-');
+function newCode() {
+  const r = crypto.getRandomValues(new Uint8Array(12));
+  return [...r].map(b => CODE_ABC[b % CODE_ABC.length]).join('');
+}
+async function codeHash(c) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normCode(c)));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function setPlayerCode(c) {
+  playerCode = c ? normCode(c) : '';
+  try { playerCode ? localStorage.setItem('routeSnakeCode', playerCode) : localStorage.removeItem('routeSnakeCode'); } catch (e) {}
+  renderAccount();
+}
+const gameData = rec => ({ name: (rec.name || 'Игрок').slice(0, 24), score: rec.score | 0, eaten: rec.eaten | 0, len: rec.len | 0, speed: +rec.speed || 1, date: rec.date });
+let myRowId = null;    // строка игрока в общей таблице, чтобы подсветить её
+
 const REMOTE = {
   async load() {
     await initFirebase();
@@ -1079,29 +1115,54 @@ const REMOTE = {
   },
   async mine() {
     await initFirebase();
-    if (!fbUser) return null;
-    const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(30).get();
-    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    if (fbUser) {
+      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(30).get();
+      return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    }
+    if (playerCode) {
+      const doc = await db.collection('anon').doc(await codeHash(playerCode)).get();
+      return doc.exists ? doc.data().games || [] : [];
+    }
+    return null;
   },
   async submit(rec) {
     await initFirebase();
-    if (!fbUser) return;
-    const data = { name: (rec.name || 'Игрок').slice(0, 24), score: rec.score | 0, eaten: rec.eaten | 0, len: rec.len | 0, date: rec.date, uid: fbUser.uid };
-    await db.collection('users').doc(fbUser.uid).collection('games').add(data);
-    const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
-    if (!cur.exists || data.score >= cur.data().score) await ref.set(data);   // в общей таблице — лучший результат игрока
+    const data = gameData(rec);
+    if (fbUser) {
+      await db.collection('users').doc(fbUser.uid).collection('games').add(data);
+      const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+      if (!cur.exists || data.score >= cur.data().score) await ref.set({ ...data, kind: 'google' });   // в таблице — лучший результат
+      myRowId = fbUser.uid;
+      return;
+    }
+    if (!playerCode) setPlayerCode(newCode());
+    const h = await codeHash(playerCode), ref = db.collection('anon').doc(h), cur = await ref.get();
+    const games = [...(cur.exists ? cur.data().games || [] : []), data].sort(byScore).slice(0, 50);
+    const best = Math.max(data.score, cur.exists ? cur.data().best || 0 : 0);
+    const batch = db.batch();
+    batch.set(ref, { code: playerCode, games, best, name: data.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    // строку общей таблицы правила пускают только вместе с записью, подтверждённой кодом
+    if (data.score >= best) batch.set(db.collection('scores').doc('a_' + h), { ...data, kind: 'code' });
+    await batch.commit();
+    myRowId = 'a_' + h;
   },
   async rename(name) {
-    if (!db || !fbUser) return;
-    const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
-    if (cur.exists) await ref.set({ ...cur.data(), name: name.slice(0, 24) });
+    if (!db) return;
+    if (fbUser) {
+      const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+      if (cur.exists) await ref.set({ ...cur.data(), name: name.slice(0, 24) });
+    }
   },
   async place(score) {
     const snap = await db.collection('scores').where('score', '>', score).count().get();
     return snap.data().count + 1;
   },
+  async codeExists(c) {
+    await initFirebase();
+    return (await db.collection('anon').doc(await codeHash(c)).get()).exists;
+  },
 };
-// первый вход на устройстве: переносим лучший результат, сыгранный до входа
+// первый вход через Google на устройстве: переносим лучший результат, сыгранный до входа
 async function uploadLocalBest() {
   const best = localScores().filter(r => !r.synced).sort(byScore)[0];
   if (!best || !best.score) return;
@@ -1134,17 +1195,53 @@ async function signIn() {
 }
 function signOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
 function renderAccount() {
-  const html = fbUser
-    ? `<span>Вы вошли: <b>${esc(fbUser.displayName || fbUser.email || 'Google')}</b></span><button class="ghost small" data-act="out">Выйти</button>`
-    : `<span>Войдите, чтобы попасть в общую таблицу и видеть свои рекорды на любом устройстве.</span><button class="small google" data-act="in">Войти через Google</button>`;
+  let html;
+  if (fbUser) {
+    html = `<span>Вы вошли: <b>${esc(fbUser.displayName || fbUser.email || 'Google')}</b></span><button class="ghost" data-act="out">Выйти</button>`;
+  } else {
+    const code = playerCode
+      ? `<span>Ваш код игрока. Введите его на другом устройстве, и рекорды будут там же.</span>
+         <div class="code"><b>${prettyCode(playerCode)}</b><button class="ghost" data-act="copy">Копировать</button></div>`
+      : `<span>Без входа рекорды хранятся по коду игрока. Код появится после первой игры.</span>`;
+    html = `${code}
+      <div class="codeform hidden"><input class="codein" placeholder="XXXX-XXXX-XXXX" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="done"><button class="ghost" data-act="usecode">Готово</button></div>
+      <button class="ghost" data-act="havecode">${playerCode ? 'Ввести другой код' : 'У меня есть код'}</button>
+      <button class="google" data-act="in">Войти через Google</button>`;
+  }
   document.querySelectorAll('.account').forEach(el => { el.innerHTML = html; });
   renderStart();
+}
+async function useCode(box) {
+  const inp = box.querySelector('.codein'), c = normCode(inp.value);
+  if (c.length !== 12) { toast('В коде 12 символов, например ABCD-EFGH-JKLM'); inp.focus(); return; }
+  toast('Проверяю код…');
+  try {
+    if (!(await REMOTE.codeExists(c))) { toast('Такого кода нет. Проверьте буквы и цифры', 3000); return; }
+    setPlayerCode(c);
+    track('code_restore');
+    toast('Код принят: ваши рекорды подключены');
+  } catch (e) { toast('Не удалось проверить код: нет связи с базой'); }
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('.account button');
   if (!b) return;
-  b.dataset.act === 'in' ? signIn() : signOut();
+  const box = b.closest('.account');
+  ({
+    in: signIn,
+    out: signOut,
+    copy: () => {
+      const text = prettyCode(playerCode);
+      navigator.clipboard?.writeText(text).then(() => toast('Код скопирован')).catch(() => toast('Код: ' + text, 4000));
+    },
+    havecode: () => { box.querySelector('.codeform').classList.remove('hidden'); b.classList.add('hidden'); box.querySelector('.codein').focus(); },
+    usecode: () => useCode(box),
+  })[b.dataset.act]?.();
 });
+document.addEventListener('keydown', e => {
+  if (!e.target.classList?.contains('codein')) return;
+  e.stopPropagation();
+  if (e.key === 'Enter') useCode(e.target.closest('.account'));
+}, true);
 
 let nick = '';
 try { nick = localStorage.getItem('routeSnakeName') || ''; } catch (e) {}
@@ -1157,17 +1254,21 @@ function localScores() { try { return JSON.parse(localStorage.getItem('routeSnak
 function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
 const byScore = (a, b) => b.score - a.score || b.len - a.len;
 async function submitScore() {
-  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
+  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
   const list = [...localScores(), rec].sort(byScore);
   $('rank').textContent = score > 0 ? `${list.findIndex(r => r.id === rec.id) + 1}-е место в рекордах этого устройства` : '';
-  if (fbUser && score > 0) {
-    rec.synced = true;
-    REMOTE.submit(rec).then(() => REMOTE.place(score)).then(p => { $('rank').textContent = `${p}-е место в общей таблице`; }).catch(() => {});
+  if (score > 0) {
+    rec.synced = !!fbUser;
+    REMOTE.submit(rec).then(() => {
+      if (!fbUser) $('codeNote').innerHTML = `Рекорд сохранён по коду <b>${prettyCode(playerCode)}</b>. Код есть в меню, с ним рекорды откроются на любом устройстве.`;
+      return REMOTE.place(score);
+    }).then(p => { $('rank').textContent = `${p}-е место в общей таблице`; }).catch(() => {});
   }
   saveLocalScores(list);
   return rec;
 }
 let lastRecId = null, recTab = 'all';
+const speedLabel = s => '×' + (+s || 1).toString().replace('.', ',');
 async function showRecords() {
   showPage('records', $('panel').classList.contains('hidden') ? null : 'menu');
   renderAccount();
@@ -1176,17 +1277,16 @@ async function showRecords() {
   try {
     const timeout = new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 8000));
     list = await Promise.race([recTab === 'all' ? REMOTE.load() : REMOTE.mine(), timeout]);
-    note = recTab === 'all' ? 'Общая таблица: лучший результат каждого игрока.' : 'Ваши игры на всех устройствах.';
+    note = recTab === 'all' ? 'Общая таблица: лучший результат каждого игрока.' : fbUser ? 'Ваши игры на всех устройствах с этим Google-аккаунтом.' : 'Ваши игры по коду игрока.';
   } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
   if (!list) {
     list = localScores();
-    if (recTab === 'mine') list = list.filter(r => !nick || r.name === nick);
-    if (!note) note = 'Рекорды этого устройства. Войдите через Google, чтобы видеть их везде.';
+    if (!note) note = 'Рекорды этого устройства.';
   }
   list = list.sort(byScore).slice(0, 30);
-  const me = r => r.id === lastRecId || (recTab === 'all' && fbUser && r.uid === fbUser.uid);
+  const me = r => r.id === lastRecId || (recTab === 'all' && r.id && r.id === myRowId);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}</small></span><span class="pts">${r.score}</span></li>`).join('')
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1215,10 +1315,22 @@ function frame(now) {
   if (alive && !paused && map.getSource('body')) {
     gameTime += dt * 1000;
     const v = speed * MULS[mulIdx] * speedFactor();
-    advance(v * dt);
+    // на больших скоростях голова за кадр проходит 20+ м: двигаем мелкими шагами,
+    // чтобы не проскочить знак или собственное тело
+    let move = v * dt, bodyGeo;
+    while (alive) {
+      const step = Math.min(move, 6);
+      advance(step); move -= step;
+      const p = headPos();
+      bodyGeo = buildBody(p);
+      checkFood(p);
+      if (hitSelf(p)) { gameOver(); break; }
+      if (move <= 0) break;
+    }
+    if (!alive) { requestAnimationFrame(frame); return; }
     renderFx();
     const hp = headPos(), b = brg(head.from, head.to);
-    map.getSource('body').setData(buildBody(hp));
+    map.getSource('body').setData(bodyGeo);
     if (hintOn) map.getSource('preview').setData(previewGeo(hp));
     updateNav(hp);
     music();
@@ -1227,9 +1339,7 @@ function frame(now) {
     headMarker.setLngLat(ll).setRotation(b);
     const z = map.getZoom();
     map.jumpTo({ center: ll, bearing: camB, zoom: z + (zoomLvl - z) * Math.min(1, dt * 8) });
-    checkFood(hp);
     $('score').textContent = score; $('len').textContent = Math.round(bodyLen); $('eaten').textContent = eaten;
-    if (hitSelf(hp)) gameOver();
   }
   requestAnimationFrame(frame);
 }
@@ -1237,7 +1347,7 @@ function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   reset(); alive = true; paused = false;
   ['start', 'over'].forEach(closeOverlay); closePanel();
-  $('rank').textContent = '';
+  $('rank').textContent = ''; $('codeNote').textContent = '';
   audioInit(); SFX.start();
   track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx] });
   if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
