@@ -15,6 +15,17 @@
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="roads.js?v=5"></script>
+<script>
+// ВКонтакте и Одноклассники открывают игру во фрейме с параметром vk_app_id и ждут VKWebAppInit не дольше 30 секунд
+const inVK = /[?&]vk_app_id=/.test(location.search);
+if (inVK) {
+  document.documentElement.classList.add('in-vk');
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/@vkontakte/vk-bridge@2.15.2/dist/browser.min.js';
+  s.onload = () => { const b = window.vkBridge && (window.vkBridge.default || window.vkBridge); if (b) b.send('VKWebAppInit', {}); };
+  document.head.appendChild(s);
+}
+</script>
 <style>
   /* интерфейс в духе карточек 2ГИС: белые плашки, мягкая тень, чёрные контурные иконки */
   :root { --card: #fff; --ink: #1a1a1a; --muted: #8c8c8c; --line: #ececec; --green: #26a541; --blue: #1a73e8; --route: #7b5cff;
@@ -263,6 +274,8 @@
   @keyframes beacon { 0%, 100% { opacity: 1; fill: #ffb300; } 50% { opacity: .35; fill: #ff6d00; } }
   .blink-a { animation: blink2 .6s steps(1) infinite; } .blink-b { animation: blink2 .6s steps(1) infinite reverse; }
   @keyframes blink2 { 50% { opacity: .15; } }
+  /* во ВКонтакте вход через Google не работает — там играют с кодом игрока */
+  .in-vk button.google, .in-vk [data-act=in] { display: none !important; }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -1505,7 +1518,7 @@ async function uploadLocalBest() {
 }
 
 // Встроенные браузеры приложений (Telegram, Instagram, VK…) Google для входа не пускает
-const inAppBrowser = /Telegram|FBAN|FBAV|Instagram|VKClient|; wv\)/i.test(navigator.userAgent);
+const inAppBrowser = inVK || /Telegram|FBAN|FBAV|Instagram|VKClient|; wv\)/i.test(navigator.userAgent);
 const SIGNIN_ERRORS = {
   'auth/popup-blocked': 'Браузер заблокировал окно входа. Нажмите кнопку ещё раз',
   'auth/configuration-not-found': 'Вход через Google ещё не включён в настройках Firebase',
@@ -1906,8 +1919,8 @@ function renderStart() {
   $('startAuth').innerHTML = fbUser
     ? `<button id="go">Играть как ${esc(name.split(' ')[0])}</button><button class="link" data-start="out">Выйти из аккаунта</button>`
     : `<button class="google" data-start="google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#fff" opacity=".85" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#fff" opacity=".7" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#fff" opacity=".55" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg><span>Войти через Google</span></button>
-       <button class="ghost" id="go">Играть анонимно</button>
-       <p class="anonNote">Без входа рекорды сохраняются только на этом устройстве</p>`;
+       <button class="${inVK ? '' : 'ghost'}" id="go">${inVK ? 'Играть' : 'Играть анонимно'}</button>
+       <p class="anonNote">${inVK ? 'Рекорды сохраняются по коду игрока — он появится после первой игры' : 'Без входа рекорды сохраняются только на этом устройстве'}</p>`;
 }
 $('startAuth').addEventListener('click', async e => {
   const b = e.target.closest('button');
