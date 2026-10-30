@@ -14,7 +14,7 @@
 <link rel="icon" href="icon-192.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="roads.js?v=3"></script>
+<script src="roads.js?v=4"></script>
 <style>
   /* интерфейс в духе карточек 2ГИС: белые плашки, мягкая тень, чёрные контурные иконки */
   :root { --card: #fff; --ink: #1a1a1a; --muted: #8c8c8c; --line: #ececec; --green: #26a541; --blue: #1a73e8; --route: #7b5cff;
@@ -658,7 +658,7 @@ function reset() {
   map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
   traffic = pickTraffic(); sinceTraffic = 0;
   trail = [{ p: P[s], c: traffic }];
-  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0;
+  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0; waiting = false; goStraight = false;
   camB = brg(head.from, head.to);
   (foods || []).forEach(f => f.m.remove());
   foods = [];
@@ -713,6 +713,7 @@ function previewGeo(hp) {
   let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1;
   const pts = [hp, P[to]];
   while (d < 450) {
+    if (after < 0 && !queued && isForcedJunction(to, from)) break;   // дальше решает игрок
     const r = pickExit(to, from, brg(from, to), after < 0 ? queued : null);
     if (r.used) after = 0;
     if (r.n === from) break;                           // тупик
@@ -740,6 +741,13 @@ function advance(move) {
     if (move < rem) { head.d += move; odo += move; return; }
     move -= rem; odo += rem;
     if (queued && odo - queuedAt > QUEUE_TTL) setQueued(null);
+    // Т-образный перекрёсток без выбора игрока: стоим у края и ждём ← или →, сами не поворачиваем
+    if (!queued && !goStraight && isForcedJunction(head.to, head.from)) {
+      head.d = L;
+      if (!waiting) { waiting = true; toast('Перекрёсток: выберите ← или →'); }
+      return;
+    }
+    waiting = false; goStraight = false;
     sinceTraffic += L;
     if (sinceTraffic > 90 + Math.random() * 160) { traffic = pickTraffic(); sinceTraffic = 0; }
     const nxt = chooseNext(head.to, head.from, brg(head.from, head.to));
@@ -1065,13 +1073,17 @@ let odo = 0, queuedAt = 0;
 // Впереди перекрёсток, где прямо ехать некуда, а поворот не заказан: мигаем значком,
 // иначе змейка выберет сторону сама и это выглядит как «самоуправление»
 let askShown = false;
+// перекрёсток, где прямо ехать некуда: все съезды отклоняются больше чем на 35°
+function isForcedJunction(at, from) {
+  if (ADJ[at].length < 3) return false;
+  const inB = bearingPP(aheadPoint(at, from, 30), P[at]);
+  return ADJ[at].filter(n => n !== from).every(n => Math.abs(norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB)) > 35);
+}
+let waiting = false, goStraight = false;
 function forcedJunctionAhead(hp) {
   let from = head.from, to = head.to, d = dist(hp, P[to]);
   for (let i = 0; i < 60 && d < 120; i++) {
-    if (ADJ[to].length >= 3) {
-      const inB = bearingPP(aheadPoint(to, from, 30), P[to]);
-      return ADJ[to].filter(n => n !== from).every(n => Math.abs(norm(bearingPP(P[to], aheadPoint(to, n, 40)) - inB)) > 35);
-    }
+    if (ADJ[to].length >= 3) return isForcedJunction(to, from);
     if (ADJ[to].length !== 2) return false;
     const nx = ADJ[to][0] === from ? ADJ[to][1] : ADJ[to][0];
     from = to; to = nx; d += dist(P[from], P[to]);
@@ -1096,6 +1108,7 @@ function steer(k) {
   audioInit();
   if (!alive || paused) return;
   if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
+  if (k === 'S' && waiting) goStraight = true;      // стоим у перекрёстка, ↑ — ехать по самому прямому съезду
   setQueued(k === 'S' ? null : k);
   SFX.queue();
 }
