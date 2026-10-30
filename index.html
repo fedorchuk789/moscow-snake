@@ -146,6 +146,12 @@
   .account span { flex: 1; min-width: 0; }
   .card .account button { width: 100%; font-size: 15px; padding: 10px 12px; }
   .card button.google { background: #1a73e8; color: #fff; }
+  .startAuth { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .card .startAuth button { margin-top: 0; }
+  .card button.google { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .card button.google svg { width: 20px; height: 20px; flex: none; }
+  .card button.link { background: none; font-size: 14px; font-weight: 500; color: var(--muted); padding: 4px; }
+  .card .anonNote { font-size: 12px; color: var(--muted); }
   .slist { display: flex; flex-direction: column; gap: 8px; }
   .srow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; }
   .srow img { height: 30px; width: 40px; object-fit: contain; flex: none; }
@@ -227,7 +233,7 @@
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
   </div>
   <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук</div>
-  <button id="go">Поехали</button>
+  <div class="startAuth" id="startAuth"></div>
 </div></div>
 <div class="overlay hidden" id="over"><div class="card">
   <h1>Авария!</h1>
@@ -1034,6 +1040,7 @@ function renderAccount() {
     ? `<span>Вы вошли: <b>${esc(fbUser.displayName || fbUser.email || 'Google')}</b></span><button class="ghost small" data-act="out">Выйти</button>`
     : `<span>Войдите, чтобы попасть в общую таблицу и видеть свои рекорды на любом устройстве.</span><button class="small google" data-act="in">Войти через Google</button>`;
   document.querySelectorAll('.account').forEach(el => { el.innerHTML = html; });
+  renderStart();
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('.account button');
@@ -1146,7 +1153,26 @@ function gameOver() {
   $('nameBox').classList.toggle('hidden', !!nick);
   $('over').classList.remove('hidden');
 }
-$('go').onclick = start; $('again').onclick = start;
+$('again').onclick = start;
+// стартовый экран: войти через Google или играть без входа
+function renderStart() {
+  const name = fbUser && (fbUser.displayName || fbUser.email || 'Google');
+  $('startAuth').innerHTML = fbUser
+    ? `<button id="go">Играть как ${esc(name.split(' ')[0])}</button><button class="link" data-start="out">Выйти из аккаунта</button>`
+    : `<button class="google" data-start="google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#fff" opacity=".85" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#fff" opacity=".7" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#fff" opacity=".55" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg><span>Войти через Google</span></button>
+       <button class="ghost" id="go">Играть анонимно</button>
+       <p class="anonNote">Без входа рекорды сохраняются только на этом устройстве</p>`;
+}
+$('startAuth').addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'go') return start();
+  if (b.dataset.start === 'out') return signOut();
+  b.disabled = true; b.querySelector('span').textContent = 'Открываю Google…';
+  await signIn();
+  if (fbUser) start(); else renderStart();
+});
+renderStart();
 requestAnimationFrame(t => { last = t; frame(t); });
 </script>
 </body>
