@@ -80,6 +80,10 @@
           background: var(--blue); box-shadow: var(--shadow); display: grid; place-items: center; opacity: 0; transition: opacity .15s; pointer-events: none; }
   #turn .ico { stroke: #fff; width: 32px; height: 32px; stroke-width: 2.6; }
   #turn.on { opacity: 1; }
+  #turn.ask { opacity: 1; background: #f29900; animation: askPulse .7s ease-in-out infinite alternate; }
+  @keyframes askPulse { to { transform: translateX(-50%) scale(1.12); } }
+  @media (max-width: 640px) { @keyframes askPulse { to { transform: scale(1.12); } } }
+  @media (prefers-reduced-motion: reduce) { #turn.ask { animation: none; } }
   .pad { position: absolute; bottom: calc(18px + var(--sb)); left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 5; }
   .pad button { width: 60px; height: 60px; border-radius: 14px; border: 0; background: var(--card); box-shadow: var(--shadow);
                 display: grid; place-items: center; cursor: pointer; }
@@ -550,6 +554,7 @@ map.on('style.load', () => {
     if (l.type === 'symbol' && map.getLayoutProperty(l.id, 'text-field')) map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:ru'], ['get', 'name']]);
   });
   const firstSymbol = layers.slice(lastGeom + 1).find(l => l.type === 'symbol')?.id;
+  if (theme === 'dark') brightenDarkMap();
   map.addSource('body', { type: 'geojson', data: empty() });
   map.addSource('graph', { type: 'geojson', data: graphGeo() });
   map.addLayer({ id: 'graph', type: 'line', source: 'graph', layout: { visibility: 'none' }, paint: { 'line-color': '#7a3cff', 'line-width': 1.5, 'line-opacity': .6 } }, firstSymbol);
@@ -572,6 +577,30 @@ map.on('style.load', () => {
     paint: { 'line-color': '#7b5cff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 3.5, 17, 10] } }, 'body-case');
 });
 const empty = () => ({ type: 'FeatureCollection', features: [] });
+// в тёмном стиле OpenFreeMap дороги почти сливаются с фоном: делаем их и воду с парками заметнее
+const DARK_PAINT = {
+  highway_path: { 'line-color': '#2e3035' },
+  highway_minor: { 'line-color': '#41444b', 'line-opacity': 1 },
+  highway_major_casing: { 'line-color': '#6b6f78' },
+  highway_major_inner: { 'line-color': '#4a4d55' },
+  highway_major_subtle: { 'line-color': '#4a4d55' },
+  highway_motorway_casing: { 'line-color': '#7a7e88' },
+  highway_motorway_inner: { 'line-color': '#5a5e67' },
+  highway_motorway_subtle: { 'line-color': '#4a4d55' },
+  railway: { 'line-color': '#3a3b40' },
+  railway_minor: { 'line-color': '#34353a' },
+  railway_transit: { 'line-color': '#34353a' },
+  water: { 'fill-color': '#142231' },
+  landuse_park: { 'fill-color': '#15211a' },
+  landcover_wood: { 'fill-color': '#15211a' },
+  building: { 'fill-color': '#1b1c20' },
+};
+function brightenDarkMap() {
+  for (const [id, paint] of Object.entries(DARK_PAINT)) {
+    if (!map.getLayer(id)) continue;
+    for (const [k, v] of Object.entries(paint)) { try { map.setPaintProperty(id, k, v); } catch (e) {} }
+  }
+}
 function graphGeo() {
   const f = [];
   ADJ.forEach((ns, a) => ns.forEach(b => { if (a < b) f.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [NODES[a], NODES[b]] } }); }));
@@ -619,11 +648,27 @@ function headPos() {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
-// выбор ребра на узле: первый перекрёсток со съездом в нужную сторону «съедает» поворот
+// Точка на дороге примерно в len м от узла at в сторону next: идём через изгибы
+// (узлы с двумя соседями) и останавливаемся на следующем перекрёстке.
+function aheadPoint(at, next, len) {
+  let from = at, to = next, d = 0;
+  for (let i = 0; i < 40; i++) {
+    d += dist(P[from], P[to]);
+    if (d >= len || ADJ[to].length !== 2) break;
+    const nx = ADJ[to][0] === from ? ADJ[to][1] : ADJ[to][0];
+    from = to; to = nx;
+  }
+  return P[to];
+}
+const bearingPP = (a, b) => Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
+// выбор ребра на узле: первый перекрёсток со съездом в нужную сторону «съедает» поворот.
+// Направления сравниваем на отрезке ~30–40 м, а не по первому кусочку дороги:
+// съезд-«рукав» в начале почти параллелен улице, и раньше змейка иногда сама уходила на него.
 function pickExit(at, came, curB, q) {
   const opts = ADJ[at].filter(n => n !== came);
   if (!opts.length) return { n: came, used: false };   // тупик → разворот
-  const c = opts.map(n => ({ n, d: norm(brg(at, n) - curB) }));
+  const inB = bearingPP(aheadPoint(at, came, 30), P[at]);
+  const c = opts.map(n => ({ n, d: norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB) }));
   if (c.length === 1) return { n: c[0].n, used: false }; // просто изгиб дороги
   if (q === 'L' || q === 'R') {
     const sign = q === 'L' ? -1 : 1;
@@ -992,10 +1037,35 @@ const TURN_ICON = {
 // а не срабатывает где-то далеко, когда о нём уже забыли
 const QUEUE_TTL = 300;
 let odo = 0, queuedAt = 0;
+// Впереди перекрёсток, где прямо ехать некуда, а поворот не заказан: мигаем значком,
+// иначе змейка выберет сторону сама и это выглядит как «самоуправление»
+let askShown = false;
+function forcedJunctionAhead(hp) {
+  let from = head.from, to = head.to, d = dist(hp, P[to]);
+  for (let i = 0; i < 60 && d < 120; i++) {
+    if (ADJ[to].length >= 3) {
+      const inB = bearingPP(aheadPoint(to, from, 30), P[to]);
+      return ADJ[to].filter(n => n !== from).every(n => Math.abs(norm(bearingPP(P[to], aheadPoint(to, n, 40)) - inB)) > 35);
+    }
+    if (ADJ[to].length !== 2) return false;
+    const nx = ADJ[to][0] === from ? ADJ[to][1] : ADJ[to][0];
+    from = to; to = nx; d += dist(P[from], P[to]);
+  }
+  return false;
+}
+function updateAsk(hp) {
+  const ask = !queued && forcedJunctionAhead(hp);
+  if (ask === askShown) return;
+  askShown = ask;
+  $('turn').classList.toggle('ask', ask);
+  $('turn').innerHTML = ask ? '<svg class="ico" viewBox="0 0 24 24"><path d="M12 20v-8M12 12H5M12 12h7"/><path d="M8 9l-3 3 3 3M16 9l3 3-3 3"/></svg>' : '';
+  if (ask) SFX.queue();
+}
 function setQueued(q) {
   queued = q; queuedAt = odo;
   $('turn').innerHTML = q ? `<svg class="ico" viewBox="0 0 24 24">${TURN_ICON[q]}</svg>` : '';
   $('turn').classList.toggle('on', !!q);
+  $('turn').classList.remove('ask'); askShown = false;
 }
 function steer(k) {
   audioInit();
@@ -1055,8 +1125,37 @@ $('map').addEventListener('touchend', e => {
 $('map').addEventListener('touchcancel', () => { touch0 = null; });
 
 // камера как в навигаторе: голова ниже центра, впереди видно больше дороги
-const applyPadding = () => map.setPadding({ top: Math.round(innerHeight * .3), bottom: 0, left: 0, right: 0 });
-applyPadding(); addEventListener('resize', applyPadding);
+// На телефоне карта по высоте экрана целиком: в приложении с экрана «Домой» iPhone
+// сообщает высоту окна меньше реальной, и снизу оставалась пустая полоса.
+// Лишняя высота уходит в нижний отступ камеры, чтобы голова не съезжала.
+const coarse = matchMedia('(pointer: coarse)').matches;
+function applyPadding() {
+  const land = innerWidth > innerHeight;
+  const sh = coarse && screen.height ? (land ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height)) : 0;
+  const h = Math.max(innerHeight, document.documentElement.clientHeight, sh);
+  const el = $('map');
+  if (el.style.height !== h + 'px') { el.style.height = h + 'px'; map.resize(); }
+  map.setPadding({ top: Math.round(innerHeight * .3), bottom: Math.max(0, h - innerHeight), left: 0, right: 0 });
+  if (location.hash === '#debug') showDebug(h);
+}
+// замеры экрана для отладки: ссылка с #debug на конце
+function showDebug(h) {
+  let box = $('debugBox');
+  if (!box) {
+    box = document.createElement('pre'); box.id = 'debugBox';
+    box.style.cssText = 'position:fixed;left:8px;bottom:110px;z-index:30;margin:0;padding:6px 8px;font:11px/1.35 monospace;background:rgba(0,0,0,.75);color:#fff;border-radius:8px;pointer-events:none';
+    document.body.appendChild(box);
+    const probe = document.createElement('div'); probe.id = 'insetProbe';
+    probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0';
+    document.body.appendChild(probe);
+  }
+  const ps = getComputedStyle($('insetProbe'));
+  box.textContent = ['inner ' + innerWidth + '×' + innerHeight, 'client ' + document.documentElement.clientHeight, 'visual ' + Math.round(visualViewport?.height || 0),
+    'screen ' + screen.width + '×' + screen.height, 'map ' + h + ' / ' + Math.round($('map').getBoundingClientRect().bottom), 'safe top ' + ps.paddingTop + ' bottom ' + ps.paddingBottom,
+    'standalone ' + (navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches)].join('\n');
+}
+applyPadding(); addEventListener('resize', applyPadding); addEventListener('orientationchange', () => setTimeout(applyPadding, 300));
+visualViewport?.addEventListener('resize', applyPadding);
 
 // на телефоне «Мои места» прячутся за кнопкой
 const narrow = () => matchMedia('(max-width: 640px)').matches;
@@ -1440,6 +1539,7 @@ function frame(now) {
     const hp = headPos(), b = brg(head.from, head.to);
     map.getSource('body').setData(bodyGeo);
     if (hintOn) map.getSource('preview').setData(previewGeo(hp));
+    updateAsk(hp);
     updateNav(hp);
     music();
     camB += norm(b - camB) * Math.min(1, dt * 3);
