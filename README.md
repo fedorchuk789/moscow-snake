@@ -1,6 +1,6 @@
-# Змейка-маршрут
+# Snake Maps
 
-Змейка по настоящим дорогам центра Москвы: https://fedorchuk789.github.io/moscow-snake/
+Змейка по настоящим дорогам Москвы в пределах МКАД: https://fedorchuk789.github.io/moscow-snake/
 
 ## Источники
 

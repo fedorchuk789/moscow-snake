@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Змейка-маршрут</title>
+<title>Snake Maps</title>
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Змейка">
+<meta name="apple-mobile-web-app-title" content="Snake Maps">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
@@ -108,7 +109,7 @@
   .sign { height: 34px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
   .sign img { height: 34px; width: auto; max-width: 60px; display: block; }
   /* активные эффекты знаков */
-  .fx { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(96px + var(--sb)); display: flex; gap: 6px; z-index: 12; pointer-events: none; }
+  .fx { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(98px + var(--sb)); display: flex; gap: 6px; z-index: 12; pointer-events: none; }
   .chip { display: flex; align-items: center; gap: 6px; background: var(--card); border-radius: 999px; box-shadow: var(--shadow); padding: 4px 10px 4px 4px;
           font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .chip img { height: 22px; width: auto; }
@@ -167,7 +168,7 @@
   .phead { display: flex; align-items: center; gap: 12px; min-height: 48px; }
   .phead h2 { margin: 0; font-size: 24px; font-weight: 800; color: var(--ink); flex: 1; }
   .brand { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.3px; }
-  .brand svg { width: 38px; height: 38px; }
+  .brand img { width: 38px; height: 38px; border-radius: 10px; }
   .x { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #e2e2e2; display: grid; place-items: center; cursor: pointer; flex: none; }
   .x .ico { width: 22px; height: 22px; stroke: #555; }
   .grp { background: #fff; border-radius: 14px; overflow: hidden; }
@@ -237,12 +238,16 @@
     #placesBtn { display: grid; }
     .places { display: none; width: auto; right: calc(var(--gap) + var(--sr) + var(--btn) + 10px); max-width: 300px; }
     .places.open { display: block; }
-    .pad { left: calc(var(--gap) + var(--sl)); right: calc(var(--gap) + var(--sr)); transform: none; justify-content: space-between; }
-    .pad button { width: 84px; height: 68px; border-radius: 18px; }
+    /* нижняя панель с кнопками до самого края: Safari красит свою полосу под ней в тот же цвет */
+    .pad { left: 0; right: 0; bottom: 0; transform: none; justify-content: space-between; background: var(--card);
+           padding: 10px calc(14px + var(--sr)) calc(10px + var(--sb)) calc(14px + var(--sl)); border-radius: 20px 20px 0 0;
+           box-shadow: 0 -2px 16px rgba(0,0,0,.12); }
+    .pad button { width: 84px; height: 64px; border-radius: 16px; background: #f1f1f1; box-shadow: none; }
+    html, body { background: var(--card); }
     .pad button[data-k="S"] { width: 64px; }
     .pad .ico { width: 32px; height: 32px; }
-    #turn { top: auto; bottom: calc(96px + var(--sb)); left: calc(var(--gap) + var(--sl)); transform: none; }
-    .maplibregl-ctrl-bottom-right { bottom: calc(96px + var(--sb)); }
+    #turn { top: auto; bottom: calc(98px + var(--sb)); left: calc(var(--gap) + var(--sl)); transform: none; }
+    .maplibregl-ctrl-bottom-right { bottom: calc(92px + var(--sb)); }
   }
   /* телефон боком: колонка кнопок короче */
   @media (max-height: 520px) {
@@ -265,6 +270,10 @@
   [data-theme="dark"] .mrow input:not([type]) { background: #18191c; color: var(--ink); border-color: #45464d; }
   [data-theme="dark"] .pedit:hover { background: #34353b; }
   [data-theme="dark"] .pad button:active { background: #1f2f4a; }
+  @media (max-width: 640px) {
+    [data-theme="dark"] .pad button { background: #34353b; }
+    :root[data-theme="dark"], :root[data-theme="dark"] body { background: var(--card); }
+  }
   [data-theme="dark"] .card { background: var(--card); color: var(--ink); }
   [data-theme="dark"] .card p, [data-theme="dark"] .tip, [data-theme="dark"] .namebox, [data-theme="dark"] .codenote,
   [data-theme="dark"] .fullhint, [data-theme="dark"] .account, [data-theme="dark"] .srow { color: #c4c5ca; }
@@ -278,6 +287,11 @@
   [data-theme="dark"] .tab.on, [data-theme="dark"] .page .tab.on { background: #34353b; color: var(--ink); }
   [data-theme="dark"] .card .tab, [data-theme="dark"] .page .tab { color: #a9aab0; }
   [data-theme="dark"] .sheet { background: #141518; }
+  [data-theme="dark"] .grp { background: var(--card); }
+  [data-theme="dark"] .row, [data-theme="dark"] .phead h2, [data-theme="dark"] .sgroup { color: var(--ink); }
+  [data-theme="dark"] .ri .ico { stroke: #8d8e95; }
+  [data-theme="dark"] .row b { color: #b5b6bc; }
+  [data-theme="dark"] .row .chev { stroke: #6f7077; }
   [data-theme="dark"] .x { background: #2c2d32; }
   [data-theme="dark"] .x .ico { stroke: #c4c5ca; }
   [data-theme="dark"] .row + .row::before, [data-theme="dark"] .row + .fullhint::before { background: #34353b; }
@@ -341,8 +355,8 @@
   <button data-k="R" title="Направо"><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
 </div>
 <div class="overlay" id="start"><div class="card">
-  <h1>Змейка-маршрут</h1>
-  <p>Катайся по настоящим улицам Москвы, собирай дорожные знаки и не врезайся в свой хвост.</p>
+  <h1>Snake Maps</h1>
+  <p>Змейка по настоящим улицам Москвы в пределах МКАД: собирай дорожные знаки и не врезайся в свой хвост.</p>
   <div class="tips">
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></svg></div>Поворот на ближайшем перекрёстке: кнопки внизу, свайп или стрелки</div>
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
@@ -367,7 +381,7 @@
 <aside class="sheet" aria-label="Меню игры">
   <section class="page" id="menu">
     <header class="phead">
-      <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L5 37 L20 28 Z" fill="#ffe680"/><path d="M20 2 L20 28 L35 37 Z" fill="#f5bd00"/><path d="M5 37 L20 28 L35 37 L20 31.5 Z" fill="#d99a00"/></svg>Змейка</div>
+      <div class="brand"><img src="icon-192.png" alt="">Snake Maps</div>
       <button class="x" id="resume" aria-label="Закрыть меню"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </header>
     <div class="grp">
@@ -376,7 +390,7 @@
     </div>
     <div class="grp">
       <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span><b id="speedVal">×1</b></div>
-      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0" max="1" step="1" aria-label="Скорость змейки"></div>
+      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0.2" max="10" step="0.05" aria-label="Скорость змейки"></div>
       <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
       <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
@@ -443,6 +457,15 @@ const BOUNDS = NODES.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y)
 const START_SPOTS = [[37.6150, 55.7570], [37.6255, 55.7597], [37.6275, 55.7487], [37.6050, 55.7445], [37.6050, 55.7650]];
 const KX = 111320 * Math.cos(LAT0 * Math.PI / 180), KY = 110574;
 const P = NODES.map(([lng, lat]) => [(lng - LNG0) * KX, (lat - LAT0) * KY]);
+// сетка 250 м: быстро находить узлы рядом с головой на карте всей Москвы
+const CELL = 250, GRID = new Map();
+const cellKey = (x, y) => Math.floor(x / CELL) + ':' + Math.floor(y / CELL);
+P.forEach((p, i) => { const k = cellKey(p[0], p[1]); (GRID.get(k) || GRID.set(k, []).get(k)).push(i); });
+function nodesNear(p, r) {
+  const out = [], cx = Math.floor(p[0] / CELL), cy = Math.floor(p[1] / CELL), n = Math.ceil(r / CELL);
+  for (let dx = -n; dx <= n; dx++) for (let dy = -n; dy <= n; dy++) { const c = GRID.get((cx + dx) + ':' + (cy + dy)); if (c) out.push(...c); }
+  return out;
+}
 const toLL = (x, y) => [LNG0 + x / KX, LAT0 + y / KY];
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const brg = (a, b) => Math.atan2(P[b][0] - P[a][0], P[b][1] - P[a][1]) * 180 / Math.PI;
@@ -536,6 +559,7 @@ const MAP_STYLES = { light: 'https://tiles.openfreemap.org/styles/liberty', dark
 let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 try { const t = localStorage.getItem('routeSnakeTheme'); if (MAP_STYLES[t]) theme = t; } catch (e) {}
 document.documentElement.dataset.theme = theme;
+if (theme === 'dark') document.querySelector('meta[name=theme-color]').content = '#232428';
 const map = new maplibregl.Map({
   container: 'map', style: MAP_STYLES[theme],
   center: toLL(0, 0), zoom: 16.5, pitch: 40, interactive: false, attributionControl: { compact: true },
@@ -556,7 +580,7 @@ map.on('style.load', () => {
   const firstSymbol = layers.slice(lastGeom + 1).find(l => l.type === 'symbol')?.id;
   if (theme === 'dark') brightenDarkMap();
   map.addSource('body', { type: 'geojson', data: empty() });
-  map.addSource('graph', { type: 'geojson', data: graphGeo() });
+  map.addSource('graph', { type: 'geojson', data: empty() });   // заполняется только по клавише G: на всю Москву это сотни тысяч отрезков
   map.addLayer({ id: 'graph', type: 'line', source: 'graph', layout: { visibility: 'none' }, paint: { 'line-color': '#7a3cff', 'line-width': 1.5, 'line-opacity': .6 } }, firstSymbol);
   map.addLayer({ id: 'body-case', type: 'line', source: 'body', layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': '#3c3c3c', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 7, 17, 20] } }, firstSymbol);
@@ -775,9 +799,10 @@ function hitSelf(hp) {
 function spawnFood() {
   if (!CATALOG.length) return;
   const hp = head ? headPos() : [0, 0];
+  const near = nodesNear(hp, 550);
   let i, tries = 0;
-  do { i = Math.floor(Math.random() * P.length); tries++; }
-  while (tries < 500 && (dist(P[i], hp) < 80 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 60)));
+  do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
+  while (tries < 300 && (dist(P[i], hp) < 80 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 60)));
   // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
   const sign = g[Math.floor(Math.random() * g.length)];
@@ -1076,7 +1101,9 @@ function steer(k) {
 }
 function toggleGraph() {
   if (!map.getLayer('graph')) return;
-  map.setLayoutProperty('graph', 'visibility', map.getLayoutProperty('graph', 'visibility') === 'none' ? 'visible' : 'none');
+  const show = map.getLayoutProperty('graph', 'visibility') === 'none';
+  map.getSource('graph').setData(show ? graphGeo() : empty());
+  map.setLayoutProperty('graph', 'visibility', show ? 'visible' : 'none');
 }
 const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: 'S', KeyW: 'S' };
 addEventListener('keydown', e => {
@@ -1179,6 +1206,7 @@ function setTheme(t) {
   try { localStorage.setItem('routeSnakeTheme', t); } catch (e) {}
   map.setStyle(MAP_STYLES[t], { diff: false });   // без diff приходит style.load, и слои змейки, маршрута и подсказки добавятся заново
   if ($('themeToggle')) $('themeToggle').checked = t === 'dark';
+  document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#232428' : '#ffffff';
   track('theme', { theme: t });
 }
 onBtn('themeBtn', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
@@ -1206,14 +1234,20 @@ function setPaused(p) {
   if (p) { syncMenu(); showPage('menu'); track('pause'); } else closePanel();
 }
 function syncMenu() {
-  $('speedRange').max = MULS.length - 1; $('speedRange').value = mulIdx; $('speedVal').textContent = '×' + MULS[mulIdx];
+  $('speedRange').value = MULS[mulIdx]; $('speedVal').textContent = '×' + MULS[mulIdx];
   $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
   $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
 $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
 $('resume').onclick = $('resumeRow').onclick = () => { closePanel(); setPaused(false); };
 $('restart').onclick = () => { closePanel(); closeOverlay('over'); start(); };
-$('speedRange').addEventListener('input', e => { setMul(+e.target.value, false); $('speedVal').textContent = '×' + MULS[mulIdx]; });
+// ползунок линейный по скорости (×6 — чуть правее середины), значение прилипает к ближайшей ступени
+$('speedRange').addEventListener('input', e => {
+  const v = +e.target.value;
+  setMul(MULS.reduce((bi, m, i) => Math.abs(m - v) < Math.abs(MULS[bi] - v) ? i : bi, 0), false);
+  $('speedVal').textContent = '×' + MULS[mulIdx];
+});
+$('speedRange').addEventListener('change', e => { e.target.value = MULS[mulIdx]; });
 $('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
 $('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
 $('menuName').addEventListener('change', e => setNick(e.target.value));

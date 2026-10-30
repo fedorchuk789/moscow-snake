@@ -1,13 +1,13 @@
 {
-  "name": "Змейка-маршрут",
-  "short_name": "Змейка",
-  "description": "Змейка по настоящим дорогам центра Москвы",
+  "name": "Snake Maps",
+  "short_name": "Snake Maps",
+  "description": "Змейка по настоящим дорогам Москвы",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "any",
-  "background_color": "#f8f4f0",
-  "theme_color": "#f8f4f0",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
