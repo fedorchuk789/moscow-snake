@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Змейка-маршрут</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="roads.js?v=2"></script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f3efe6; font-family: system-ui, "Segoe UI", sans-serif; }
+  #map { position: absolute; inset: 0; }
+  /* интерфейс в духе карточек 2ГИС: белые плашки, мягкая тень, чёрные контурные иконки */
+  :root { --card: #fff; --ink: #1a1a1a; --muted: #8c8c8c; --line: #ececec; --green: #26a541; --blue: #1a73e8; --route: #7b5cff;
+          --shadow: 0 1px 4px rgba(0,0,0,.12), 0 2px 12px rgba(0,0,0,.08); }
+  .ico { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .top { position: absolute; top: 14px; left: 14px; display: flex; gap: 10px; align-items: center; z-index: 12; }
+  .pill { display: flex; align-items: center; height: 48px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 0 6px; }
+  .stat { display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 17px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .stat small { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .sep { width: 1px; height: 24px; background: var(--line); }
+  .ring { width: 48px; height: 48px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow); display: grid; place-items: center; }
+  .ring span { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--green); box-sizing: border-box; display: grid; place-items: center;
+               font-size: 18px; font-weight: 700; color: var(--green); }
+  .side { position: absolute; top: 14px; right: 14px; display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 12; }
+  .btn { width: 48px; height: 48px; border: 0; padding: 0; border-radius: 12px; background: var(--card); box-shadow: var(--shadow);
+         display: grid; place-items: center; cursor: pointer; }
+  .btn:hover { background: #f6f6f6; }
+  .btn.on { background: #eaf1fe; } .btn.on .ico { stroke: var(--blue); }
+  .group { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .group .btn { box-shadow: none; border-radius: 0; }
+  .group .val { font-size: 13px; font-weight: 700; color: var(--ink); text-align: center; padding: 3px 0 4px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+                display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .ico.mini { width: 16px; height: 16px; stroke: var(--muted); }
+  /* «Домой» / «На работу» как в списке мест 2ГИС */
+  .places { position: absolute; top: 72px; left: 14px; z-index: 12; width: 260px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 4px 0; }
+  .place { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 12px; cursor: pointer; border-radius: 10px; margin: 0 4px; }
+  .place:hover { background: #f6f6f6; }
+  .place.active { background: #f1ecff; }
+  .pico { width: 32px; height: 32px; border-radius: 8px; background: #f0f0f0; display: grid; place-items: center; flex: none; }
+  .pico svg { width: 18px; height: 18px; fill: #333; }
+  .place.active .pico { background: var(--route); } .place.active .pico svg { fill: #fff; }
+  .ptext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ptext b { font-size: 15px; color: var(--ink); }
+  .paddr { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .paddr:empty::before { content: 'Добавить адрес'; color: var(--blue); }
+  .pinput { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid #d0d0d0; border-radius: 6px; outline: none; width: 100%; box-sizing: border-box; }
+  .pinput:focus { border-color: var(--blue); }
+  .pedit { width: 32px; height: 32px; border: 0; background: none; border-radius: 8px; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .pedit .ico { width: 18px; height: 18px; stroke: var(--muted); }
+  .pedit:hover { background: #eee; }
+  .place.empty .pedit { display: none; }
+  .pin { width: 38px; height: 38px; border-radius: 50%; background: var(--route); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; }
+  .pin svg { width: 20px; height: 20px; fill: #fff; }
+  .toast { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); background: rgba(26,26,26,.85); color: #fff; font-size: 14px;
+           padding: 8px 14px; border-radius: 10px; z-index: 12; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  #turn { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 12; width: 56px; height: 56px; border-radius: 14px;
+          background: var(--blue); box-shadow: var(--shadow); display: grid; place-items: center; opacity: 0; transition: opacity .15s; }
+  #turn .ico { stroke: #fff; width: 32px; height: 32px; stroke-width: 2.6; }
+  #turn.on { opacity: 1; }
+  @media (max-width: 640px) { .stat small { display: none; } .stat { padding: 0 8px; font-size: 15px; } #turn { top: auto; bottom: 92px; }
+    .places { width: 200px; } .paddr { display: none; } .place.empty .paddr, .place .paddr:empty { display: block; } }
+  .overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(20,24,30,.45); }
+  .card { background: #fff; border-radius: 16px; padding: 24px 28px; max-width: 380px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .card h1 { margin: 0 0 8px; font-size: 26px; }
+  .card p { margin: 6px 0; color: #444; line-height: 1.4; }
+  .card button { margin-top: 14px; font-size: 18px; padding: 10px 26px; border: 0; border-radius: 10px; background: #ffcc00; font-weight: 700; cursor: pointer; }
+  .hidden { display: none; }
+  .pad { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 5; }
+  .pad button { width: 60px; height: 60px; border-radius: 14px; border: 0; background: var(--card); box-shadow: var(--shadow);
+                display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
+  .pad .ico { width: 28px; height: 28px; stroke-width: 2.4; }
+  .head svg { filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); display: block; }
+  .sign { width: 34px; height: 34px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  .sign svg { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top">
+  <div class="ring" title="Очки"><span id="score">0</span></div>
+  <div class="pill">
+    <div class="stat" title="Длина змейки"><svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg><span id="len">0</span><small>м</small></div>
+    <div class="sep"></div>
+    <div class="stat" title="Съедено дорожных знаков"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5L21 19H3z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".4"/></svg><span id="eaten">0</span><small>знаков</small></div>
+  </div>
+</div>
+<div class="places" id="places">
+  <div class="place" data-key="home">
+    <div class="pico"><svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20h-5v-5h-6v5H4z"/></svg></div>
+    <div class="ptext"><b>Домой</b><span class="paddr"></span><input class="pinput hidden" placeholder="Улица, дом" enterkeyhint="done"></div>
+    <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+  </div>
+  <div class="place" data-key="work">
+    <div class="pico"><svg viewBox="0 0 24 24"><path d="M3.5 8.5h17V19h-17z"/><path d="M9 8.5V6h6v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+    <div class="ptext"><b>На работу</b><span class="paddr"></span><input class="pinput hidden" placeholder="Улица, дом" enterkeyhint="done"></div>
+    <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+  </div>
+</div>
+<div class="side">
+  <button class="btn" id="mute" title="Звук (M)"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path id="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path id="cross" d="M16 9.5l5 5M21 9.5l-5 5" style="display:none"/></svg></button>
+  <div class="group" title="Масштаб карты (+ / −, колесо мыши)">
+    <button class="btn" id="zoomIn"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="btn" id="zoomOut" style="border-top:1px solid var(--line)"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+  </div>
+  <div class="group" title="Скорость змейки ([ / ])">
+    <button class="btn" id="faster"><svg class="ico" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+    <div class="val"><svg class="ico mini" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg><span id="mul">×1</span></div>
+    <button class="btn" id="slower"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+  <button class="btn on" id="hintBtn" title="Подсказка поворота (H)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/></svg></button>
+</div>
+<div id="turn"></div>
+<div class="toast" id="toast"></div>
+<div class="pad">
+  <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button data-k="S" title="Прямо"><svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>
+  <button data-k="R" title="Направо"><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+<div class="overlay" id="start"><div class="card">
+  <h1>Змейка-маршрут</h1>
+  <p>Едешь только по настоящим дорогам Москвы. Собирай дорожные знаки, и маршрут становится длиннее.</p>
+  <p><b>← →</b> повернуть на следующем перекрёстке<br><b>↑</b> отменить поворот, ехать прямо<br>Белая стрелка показывает, где будет поворот<br><b>+ / −</b> масштаб, <b>[ / ]</b> скорость, <b>H</b> подсказка, <b>M</b> звук</p>
+  <p>Добавь адреса «Домой» и «На работу» слева, нажми на них, и змейке проложится маршрут. Доедешь до места, получишь +5 очков.</p>
+  <p>Не врежься в собственный маршрут.</p>
+  <button id="go">Поехали</button>
+</div></div>
+<div class="overlay hidden" id="over"><div class="card">
+  <h1>Авария!</h1>
+  <p id="result"></p>
+  <button id="again">Ещё раз</button>
+</div></div>
+
+<script>
+// ---------- граф дорог (OSM) в локальных метрах ----------
+const NODES = ROADS.nodes, ADJ = ROADS.adj;
+const LNG0 = 37.62, LAT0 = 55.75;
+// точки старта в центре: Охотный Ряд, Лубянка, Москворецкий мост, Волхонка, Тверская
+const BOUNDS = NODES.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [180, 90, -180, -90]);
+const START_SPOTS = [[37.6150, 55.7570], [37.6255, 55.7597], [37.6275, 55.7487], [37.6050, 55.7445], [37.6050, 55.7650]];
+const KX = 111320 * Math.cos(LAT0 * Math.PI / 180), KY = 110574;
+const P = NODES.map(([lng, lat]) => [(lng - LNG0) * KX, (lat - LAT0) * KY]);
+const toLL = (x, y) => [LNG0 + x / KX, LAT0 + y / KY];
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const brg = (a, b) => Math.atan2(P[b][0] - P[a][0], P[b][1] - P[a][1]) * 180 / Math.PI;
+const norm = d => ((d % 360) + 540) % 360 - 180;
+
+// ---------- настройки ----------
+const START_LEN = 70, GROW = 45, BASE_SPEED = 38, MAX_SPEED = 75;
+const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 8;
+const TRAFFIC = [['#3fb33f', .45], ['#2a8f2a', .2], ['#f7c21a', .23], ['#e8453c', .12]];
+const SIGNS = [
+  { pts: 1, svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#fff" stroke="#d62b25" stroke-width="5"/><text x="20" y="26.5" font-size="17" font-weight="800" text-anchor="middle" font-family="Arial">40</text></svg>', slow: true },
+  { pts: 1, svg: '<svg viewBox="0 0 40 40"><path d="M3 5 H37 L20 36 Z" fill="#fff" stroke="#d62b25" stroke-width="4" stroke-linejoin="round"/></svg>' },
+  { pts: 2, svg: '<svg viewBox="0 0 40 40"><path d="M13 2 H27 L38 13 V27 L27 38 H13 L2 27 V13 Z" fill="#d62b25" stroke="#fff" stroke-width="2"/><text x="20" y="24.5" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial">STOP</text></svg>' },
+  { pts: 3, svg: '<svg viewBox="0 0 40 40"><path d="M20 2 L38 20 L20 38 L2 20 Z" fill="#fff" stroke="#333" stroke-width="1"/><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#ffcc00"/></svg>', fast: true },
+  { pts: 1, svg: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#d62b25" stroke="#fff" stroke-width="2"/><rect x="8" y="16" width="24" height="8" fill="#fff"/></svg>' },
+  { pts: 1, svg: '<svg viewBox="0 0 40 40"><rect x="2" y="2" width="36" height="36" rx="5" fill="#1f5fd6" stroke="#fff" stroke-width="2"/><text x="20" y="29" font-size="24" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial">P</text></svg>' },
+];
+
+// ---------- карта ----------
+const RASTER_STYLE = { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } },
+  layers: [{ id: 'osm', type: 'raster', source: 'osm' }] };
+const map = new maplibregl.Map({
+  container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: toLL(0, 0), zoom: 16.5, pitch: 40, interactive: false, attributionControl: { compact: true },
+});
+let styleOk = false;
+map.on('error', () => { if (!styleOk) { styleOk = true; map.setStyle(RASTER_STYLE); } });
+map.on('style.load', () => {
+  styleOk = true;
+  // плоская карта как в навигаторе: без 3D-домов, подписи по-русски
+  // змейку кладём поверх всех дорог и мостов, но под подписи
+  const layers = map.getStyle().layers;
+  let lastGeom = 0;
+  layers.forEach((l, i) => {
+    if (l.type === 'fill-extrusion') map.setLayoutProperty(l.id, 'visibility', 'none');
+    else if (l.type !== 'symbol') lastGeom = i;
+    if (l.type === 'symbol' && map.getLayoutProperty(l.id, 'text-field')) map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:ru'], ['get', 'name']]);
+  });
+  const firstSymbol = layers.slice(lastGeom + 1).find(l => l.type === 'symbol')?.id;
+  map.addSource('body', { type: 'geojson', data: empty() });
+  map.addSource('graph', { type: 'geojson', data: graphGeo() });
+  map.addLayer({ id: 'graph', type: 'line', source: 'graph', layout: { visibility: 'none' }, paint: { 'line-color': '#7a3cff', 'line-width': 1.5, 'line-opacity': .6 } }, firstSymbol);
+  map.addLayer({ id: 'body-case', type: 'line', source: 'body', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#3c3c3c', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 7, 17, 20] } }, firstSymbol);
+  map.addLayer({ id: 'body', type: 'line', source: 'body', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': ['get', 'c'], 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 4.5, 17, 13] } }, firstSymbol);
+  map.addSource('preview', { type: 'geojson', data: empty() });
+  map.addLayer({ id: 'preview-case', type: 'line', source: 'preview', filter: ['==', '$type', 'LineString'], layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#1d4fd8', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 4, 17, 11] } }, firstSymbol);
+  map.addLayer({ id: 'preview', type: 'line', source: 'preview', filter: ['==', '$type', 'LineString'], layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 2, 17, 6] } }, firstSymbol);
+  map.addLayer({ id: 'preview-tip', type: 'fill', source: 'preview', filter: ['==', '$type', 'Polygon'],
+    paint: { 'fill-color': '#ffffff', 'fill-outline-color': '#1d4fd8' } }, firstSymbol);
+  // маршрут «Домой / На работу» — под змейкой
+  map.addSource('nav', { type: 'geojson', data: empty() });
+  map.addLayer({ id: 'nav-case', type: 'line', source: 'nav', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 6, 17, 16] } }, 'body-case');
+  map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#7b5cff', 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 15, 3.5, 17, 10] } }, 'body-case');
+});
+const empty = () => ({ type: 'FeatureCollection', features: [] });
+function graphGeo() {
+  const f = [];
+  ADJ.forEach((ns, a) => ns.forEach(b => { if (a < b) f.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [NODES[a], NODES[b]] } }); }));
+  return { type: 'FeatureCollection', features: f };
+}
+
+// голова: своя трёхгранная стрелка
+const headEl = document.createElement('div');
+headEl.className = 'head';
+headEl.innerHTML = '<svg width="44" height="44" viewBox="0 0 40 40"><path d="M20 2 L5 37 L20 28 Z" fill="#ffe680"/><path d="M20 2 L20 28 L35 37 Z" fill="#f5bd00"/><path d="M5 37 L20 28 L35 37 L20 31.5 Z" fill="#d99a00"/></svg>';
+const headMarker = new maplibregl.Marker({ element: headEl, rotationAlignment: 'map', pitchAlignment: 'map' });
+
+// ---------- состояние ----------
+let head, trail, bodyLen, speed, slowUntil, fastUntil, score, eaten = 0, queued, traffic, sinceTraffic, foods, alive, camB, bodyPieces;
+const $ = id => document.getElementById(id);
+
+function pickTraffic() {
+  let r = Math.random();
+  for (const [c, w] of TRAFFIC) { if ((r -= w) < 0) return c; }
+  return TRAFFIC[0][0];
+}
+
+function reset() {
+  // старт: случайная точка в самом центре, ближайший к ней перекрёсток
+  const spots = START_SPOTS.filter(([x, y]) => x > BOUNDS[0] + .003 && x < BOUNDS[2] - .003 && y > BOUNDS[1] + .002 && y < BOUNDS[3] - .002);
+  const [lng, lat] = (spots.length ? spots : START_SPOTS)[Math.floor(Math.random() * (spots.length || START_SPOTS.length))];
+  const target = [(lng - LNG0) * KX, (lat - LAT0) * KY];
+  let s = 0, best = 1e9;
+  P.forEach((p, i) => { const d = dist(p, target) + (ADJ[i].length < 3 ? 200 : 0); if (d < best) { best = d; s = i; } });
+  head = { from: s, to: ADJ[s][Math.floor(Math.random() * ADJ[s].length)], d: 0 };
+  map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
+  traffic = pickTraffic(); sinceTraffic = 0;
+  trail = [{ p: P[s], c: traffic }];
+  bodyLen = START_LEN; speed = BASE_SPEED; slowUntil = fastUntil = 0; score = 0; eaten = 0; queued = null; navDirty = true;
+  camB = brg(head.from, head.to);
+  (foods || []).forEach(f => f.m.remove());
+  foods = [];
+  for (let i = 0; i < FOOD_COUNT; i++) spawnFood();
+  headMarker.setLngLat(toLL(...P[s])).addTo(map);
+  setQueued(null);
+}
+
+function headPos() {
+  const a = P[head.from], b = P[head.to], L = dist(a, b) || 1, t = head.d / L;
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}
+
+// выбор ребра на узле: первый перекрёсток со съездом в нужную сторону «съедает» поворот
+function pickExit(at, came, curB, q) {
+  const opts = ADJ[at].filter(n => n !== came);
+  if (!opts.length) return { n: came, used: false };   // тупик → разворот
+  const c = opts.map(n => ({ n, d: norm(brg(at, n) - curB) }));
+  if (c.length === 1) return { n: c[0].n, used: false }; // просто изгиб дороги
+  if (q === 'L' || q === 'R') {
+    const sign = q === 'L' ? -1 : 1;
+    const side = c.filter(o => o.d * sign > 30 && o.d * sign < 165).sort((a, b) => Math.abs(a.d - 90 * sign) - Math.abs(b.d - 90 * sign));
+    if (side.length) return { n: side[0].n, used: true };
+  }
+  c.sort((a, b) => Math.abs(a.d) - Math.abs(b.d));
+  return { n: c[0].n, used: false };
+}
+function chooseNext(at, came, curB) {
+  const r = pickExit(at, came, curB, queued);
+  if (r.used) { setQueued(null); SFX.turn(); }
+  return r.n;
+}
+
+// стрелка манёвра: куда змейка поедет на ближайшем повороте
+function previewGeo(hp) {
+  let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1;
+  const pts = [hp, P[to]];
+  while (d < 450) {
+    const r = pickExit(to, from, brg(from, to), after < 0 ? queued : null);
+    if (r.used) after = 0;
+    if (r.n === from) break;                           // тупик
+    from = to; to = r.n;
+    const L = dist(P[from], P[to]);
+    d += L; pts.push(P[to]);
+    if (after >= 0 && (after += L) > 45) break;
+    if (!queued && d > 90) break;
+  }
+  // наконечник стрелки на последнем отрезке
+  const B = pts[pts.length - 1], A = pts[pts.length - 2], len = dist(A, B) || 1;
+  const ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len, s = 9;
+  const tip = [[B[0] + ux * s, B[1] + uy * s], [B[0] - uy * s * .8, B[1] + ux * s * .8], [B[0] + uy * s * .8, B[1] - ux * s * .8]];
+  const ll = p => toLL(p[0], p[1]);
+  return { type: 'FeatureCollection', features: [
+    { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts.map(ll) } },
+    { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...tip, tip[0]].map(ll)] } },
+  ] };
+}
+
+function advance(move) {
+  while (move > 0) {
+    const L = dist(P[head.from], P[head.to]);
+    const rem = L - head.d;
+    if (move < rem) { head.d += move; return; }
+    move -= rem;
+    sinceTraffic += L;
+    if (sinceTraffic > 90 + Math.random() * 160) { traffic = pickTraffic(); sinceTraffic = 0; }
+    const nxt = chooseNext(head.to, head.from, brg(head.from, head.to));
+    trail.push({ p: P[head.to], c: traffic });
+    head = { from: head.to, to: nxt, d: 0 };
+    navDirty = true;
+  }
+}
+
+// тело: идём от головы назад по истории, режем по длине, красим как пробки
+function buildBody(hp) {
+  const pieces = [];           // [A, B, color, distFromHeadAtA]
+  let acc = 0, A = hp, k = trail.length - 1;
+  for (; k >= 0 && acc < bodyLen; k--) {
+    let B = trail[k].p; const len = dist(A, B);
+    if (len < 1e-6) continue;
+    let useLen = len;
+    if (acc + len > bodyLen) { useLen = bodyLen - acc; const t = useLen / len; B = [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t]; }
+    // синий «вы здесь» у головы
+    if (acc < BLUE_ZONE && acc + useLen > BLUE_ZONE) {
+      const t = (BLUE_ZONE - acc) / useLen, M = [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t];
+      pieces.push([A, M, '#2f6fed', acc], [M, B, trail[k].c, BLUE_ZONE]);
+    } else pieces.push([A, B, acc < BLUE_ZONE ? '#2f6fed' : trail[k].c, acc]);
+    acc += useLen; A = B;
+  }
+  if (k > 30) trail.splice(0, k - 5);                  // старую историю выкидываем
+  bodyPieces = pieces;
+  // склеиваем соседние куски одного цвета в линии
+  const feats = [];
+  let cur = null;
+  for (const [a, b, c] of pieces) {
+    if (!cur || cur.c !== c) { cur = { c, pts: [a] }; feats.push(cur); }
+    cur.pts.push(b);
+  }
+  return { type: 'FeatureCollection', features: feats.map(f => ({ type: 'Feature', properties: { c: f.c }, geometry: { type: 'LineString', coordinates: f.pts.map(p => toLL(p[0], p[1])) } })) };
+}
+
+function segDist(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+  const t = L2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2)) : 0;
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+}
+function hitSelf(hp) {
+  for (const [a, b, , d0] of bodyPieces) if (d0 >= SAFE_NECK && segDist(hp, a, b) < HIT) return true;
+  return false;
+}
+
+// ---------- еда: знаки на узлах графа ----------
+function spawnFood() {
+  const hp = head ? headPos() : [0, 0];
+  let i, tries = 0;
+  do { i = Math.floor(Math.random() * P.length); tries++; }
+  while (tries < 500 && (dist(P[i], hp) < 120 || dist(P[i], hp) > 650 || foods.some(f => dist(P[f.i], P[i]) < 80)));
+  const kind = SIGNS[Math.floor(Math.random() * SIGNS.length)];
+  const el = document.createElement('div');
+  el.className = 'sign'; el.innerHTML = kind.svg;
+  const m = new maplibregl.Marker({ element: el }).setLngLat(NODES[i]).addTo(map);
+  foods.push({ i, kind, m });
+}
+function checkFood(hp, now) {
+  for (let j = foods.length - 1; j >= 0; j--) {
+    const f = foods[j], d = dist(P[f.i], hp);
+    if (d < EAT) {
+      f.m.remove(); foods.splice(j, 1);
+      score += f.kind.pts; eaten++; bodyLen += GROW;
+      speed = Math.min(MAX_SPEED, speed + 1.5);
+      SFX.eat(f.kind.pts);
+      if (f.kind.slow) { slowUntil = now + 3500; SFX.slow(); }
+      if (f.kind.fast) { fastUntil = now + 3000; SFX.fast(); }
+      spawnFood();
+    } else if (d > 1100) { f.m.remove(); foods.splice(j, 1); spawnFood(); }
+  }
+}
+
+// ---------- звуки: синтез WebAudio, без файлов ----------
+let AC, master, pad, muted = false, nextBeat = 0, beat = 0;
+try { muted = localStorage.getItem('routeSnakeMute') === '1'; } catch (e) {}
+// мягкая фоновая музыка: тихий аккорд-подложка + редкие «колокольчики» (Am – F – C – G)
+const CHORDS = [[220, 261.63, 329.63], [174.61, 220, 261.63], [196, 261.63, 329.63], [196, 246.94, 293.66]];
+function audioInit() {
+  if (AC) { AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = AC.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(AC.destination);
+  const f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'lowpass'; f.frequency.value = 650; g.gain.value = 0;
+  f.connect(g).connect(master);
+  const lfo = AC.createOscillator(), lg = AC.createGain();   // медленное «дыхание» громкости
+  lfo.frequency.value = .12; lg.gain.value = .01; lfo.connect(lg).connect(g.gain); lfo.start();
+  const oscs = CHORDS[0].map(fr => { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = fr; o.connect(f); o.start(); return o; });
+  pad = { g, oscs };
+}
+function tone(freq, dur, { type = 'square', vol = .2, to = 0, delay = 0 } = {}) {
+  if (!AC) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur + .02);
+}
+function music() {
+  if (!AC || !pad || !alive) return;
+  if (nextBeat < AC.currentTime) nextBeat = AC.currentTime + .05;
+  while (nextBeat < AC.currentTime + .2) {           // ноты планируем чуть вперёд, чтобы ритм не «плыл»
+    const ch = CHORDS[Math.floor(beat / 8) % CHORDS.length];
+    if (beat % 8 === 0) pad.oscs.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], nextBeat, .4));
+    if (beat % 2 === 0 || Math.random() < .3) tone(ch[[0, 1, 2, 1][beat % 4]] * 2, 1.1, { type: 'sine', vol: .045, delay: nextBeat - AC.currentTime });
+    nextBeat += .5; beat++;
+  }
+}
+const SFX = {
+  start() { [523, 659, 784].forEach((fr, i) => tone(fr, .3, { type: 'triangle', vol: .15, delay: i * .1 })); },
+  queue() { tone(1046, .08, { type: 'sine', vol: .12 }); },
+  turn() { tone(660, .12, { type: 'triangle', vol: .15 }); tone(990, .16, { type: 'triangle', vol: .13, delay: .06 }); },
+  eat(pts) { const b = [0, 620, 740, 880][pts] || 620; tone(b, .12, { type: 'triangle', vol: .18 }); tone(b * 1.5, .2, { type: 'triangle', vol: .16, delay: .07 }); },
+  slow() { tone(520, .45, { type: 'sine', to: 260, vol: .14 }); },
+  fast() { tone(330, .4, { type: 'sine', to: 990, vol: .12 }); },
+  // мягкая авария: глухой «бум» и грустное нисходящее трезвучие
+  arrive() { [523, 659, 784, 1046].forEach((fr, i) => tone(fr, .35, { type: 'triangle', vol: .16, delay: i * .09 })); },
+  crash() {
+    tone(150, .5, { type: 'sine', to: 55, vol: .3 });
+    [392, 330, 262].forEach((fr, i) => tone(fr, .5, { type: 'triangle', vol: .12, delay: .15 + i * .18 }));
+  },
+};
+function setMuted(m) {
+  muted = m;
+  $('wave').style.display = m ? 'none' : ''; $('cross').style.display = m ? '' : 'none';
+  if (master) master.gain.value = m ? 0 : 0.5;
+  try { localStorage.setItem('routeSnakeMute', m ? '1' : '0'); } catch (e) {}
+}
+
+// ---------- скорость змейки ----------
+const MULS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+let mulIdx = MULS.indexOf(1), toastT;
+try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
+function toast(text) {
+  $('toast').textContent = text; $('toast').classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 1400);
+}
+function setMul(i, show) {
+  mulIdx = Math.max(0, Math.min(MULS.length - 1, i));
+  $('mul').textContent = '×' + MULS[mulIdx];
+  try { localStorage.setItem('routeSnakeMul', MULS[mulIdx]); } catch (e) {}
+  if (show) toast('Скорость ×' + MULS[mulIdx]);
+}
+
+// ---------- масштаб карты ----------
+const ZOOM_MIN = 14, ZOOM_MAX = 18.5;
+let zoomLvl = 16.5;
+try { const z = +localStorage.getItem('routeSnakeZoom'); if (z >= ZOOM_MIN && z <= ZOOM_MAX) zoomLvl = z; } catch (e) {}
+function setZoom(z) {
+  zoomLvl = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  if (!alive) map.easeTo({ zoom: zoomLvl, duration: 200 });
+  try { localStorage.setItem('routeSnakeZoom', zoomLvl); } catch (e) {}
+}
+map.jumpTo({ zoom: zoomLvl });
+$('map').addEventListener('wheel', e => { e.preventDefault(); setZoom(zoomLvl - e.deltaY * 0.0025); }, { passive: false });
+
+// ---------- подсказка поворота (белая стрелка) ----------
+let hintOn = true;
+try { hintOn = localStorage.getItem('routeSnakeHint') !== '0'; } catch (e) {}
+function setHint(on, show) {
+  hintOn = on;
+  $('hintBtn').classList.toggle('on', on);
+  if (!on && map.getSource('preview')) map.getSource('preview').setData(empty());
+  try { localStorage.setItem('routeSnakeHint', on ? '1' : '0'); } catch (e) {}
+  if (show) toast(on ? 'Подсказка поворота включена' : 'Подсказка поворота выключена');
+}
+
+// ---------- «Домой» / «На работу»: адрес → узел графа → кратчайший путь ----------
+const PLACE_ICON = {
+  home: '<svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20h-5v-5h-6v5H4z"/></svg>',
+  work: '<svg viewBox="0 0 24 24"><path d="M3.5 8.5h17V19h-17z"/><path d="M9 8.5V6h6v2.5" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+};
+const PLACE_NAME = { home: 'Дом', work: 'Работа' };
+let places = {}, nav = null, navDirty = true;      // nav = { key, node, marker }
+try { places = JSON.parse(localStorage.getItem('routeSnakePlaces')) || {}; } catch (e) {}
+const savePlaces = () => { try { localStorage.setItem('routeSnakePlaces', JSON.stringify(places)); } catch (e) {} };
+
+function nearestNode(x, y) {
+  let s = 0, best = 1e18;
+  for (let i = 0; i < P.length; i++) { const dx = P[i][0] - x, dy = P[i][1] - y, d = dx * dx + dy * dy; if (d < best) { best = d; s = i; } }
+  return [s, Math.sqrt(best)];
+}
+// Дейкстра с двоичной кучей: ~19 тыс. узлов, считается за миллисекунды
+function shortestPath(src, dst, noBack) {   // noBack: с первого узла нельзя ехать назад (змейка не разворачивается)
+  const n = P.length, D = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), heap = [];
+  const push = (d, v) => { heap.push([d, v]); let i = heap.length - 1; while (i) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i;
+    if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  D[src] = 0; push(0, src);
+  while (heap.length) {
+    const [d, v] = pop();
+    if (v === dst) break;
+    if (d > D[v]) continue;
+    for (const w of ADJ[v]) { if (v === src && w === noBack) continue; const nd = d + dist(P[v], P[w]); if (nd < D[w]) { D[w] = nd; prev[w] = v; push(nd, w); } }
+  }
+  if (!isFinite(D[dst])) return null;
+  const path = [];
+  for (let v = dst; v !== -1; v = prev[v]) path.push(v);
+  return { path: path.reverse(), len: D[dst] };
+}
+function renderPlaces() {
+  document.querySelectorAll('.place').forEach(el => {
+    const p = places[el.dataset.key];
+    el.querySelector('.paddr').textContent = p ? p.addr : '';
+    el.classList.toggle('empty', !p);
+    el.classList.toggle('active', !!nav && nav.key === el.dataset.key);
+  });
+}
+function setNav(key) {
+  if (nav) { nav.marker.remove(); nav = null; }
+  if (map.getSource('nav')) map.getSource('nav').setData(empty());
+  if (key && places[key]) {
+    const el = document.createElement('div');
+    el.className = 'pin'; el.innerHTML = PLACE_ICON[key];
+    const node = places[key].node;
+    nav = { key, node, marker: new maplibregl.Marker({ element: el }).setLngLat(NODES[node]).addTo(map) };
+    navDirty = true;
+    toast('Маршрут: ' + places[key].addr);
+  }
+  renderPlaces();
+}
+function updateNav(hp) {
+  if (!nav || !map.getSource('nav')) return;
+  if (dist(hp, P[nav.node]) < 22) {
+    score += 5; SFX.arrive(); toast(PLACE_NAME[nav.key] + '! +5 очков');
+    setNav(null); return;
+  }
+  if (!navDirty) { nav.coords[0] = toLL(hp[0], hp[1]); }
+  else {
+    navDirty = false;
+    const r = shortestPath(head.to, nav.node, head.from);
+    nav.coords = r ? [toLL(hp[0], hp[1]), ...r.path.map(i => NODES[i])] : [];
+  }
+  map.getSource('nav').setData(nav.coords.length > 1 ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: nav.coords } } : empty());
+}
+async function geocode(q) {
+  // Nominatim (OpenStreetMap), ищем только в игровой зоне
+  const vb = [BOUNDS[0], BOUNDS[3], BOUNDS[2], BOUNDS[1]].join(',');
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&countrycodes=ru&bounded=1&viewbox=' + vb + '&q=' + encodeURIComponent(q + ', Москва');
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  return j[0] ? [+j[0].lon, +j[0].lat] : null;
+}
+function editPlace(el) {
+  const inp = el.querySelector('.pinput'), addr = el.querySelector('.paddr');
+  const key = el.dataset.key;
+  inp.value = places[key] ? places[key].addr : '';
+  inp.classList.remove('hidden'); addr.classList.add('hidden');
+  inp.focus();
+  const close = () => { inp.classList.add('hidden'); addr.classList.remove('hidden'); inp.onkeydown = inp.onblur = null; };
+  inp.onblur = close;
+  inp.onkeydown = async e => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key !== 'Enter') return;
+    const q = inp.value.trim();
+    if (!q) {                                      // пустая строка — удалить адрес
+      delete places[key]; savePlaces(); if (nav && nav.key === key) setNav(null); close(); renderPlaces(); return;
+    }
+    toast('Ищу адрес…');
+    try {
+      const ll = await geocode(q);
+      if (!ll) { toast('Не нашёл адрес в игровой зоне (центр Москвы)'); return; }
+      const [node, off] = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY);
+      if (off > 400) { toast('Адрес вне игровой зоны'); return; }
+      places[key] = { addr: q, node };
+      savePlaces(); close(); renderPlaces();
+      setNav(key);
+    } catch (err) { toast('Поиск адреса недоступен: ' + err.message); }
+  };
+}
+document.querySelectorAll('.place').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target.closest('.pinput')) return;
+    if (e.target.closest('.pedit') || !places[el.dataset.key]) { editPlace(el); return; }
+    setNav(nav && nav.key === el.dataset.key ? null : el.dataset.key);   // повторный клик — убрать маршрут
+  });
+});
+renderPlaces();
+
+// ---------- управление ----------
+const TURN_ICON = {
+  L: '<path d="M16 20v-7a3 3 0 0 0-3-3H6"/><path d="M10 6l-4 4 4 4"/>',
+  R: '<path d="M8 20v-7a3 3 0 0 1 3-3h7"/><path d="M14 6l4 4-4 4"/>',
+};
+function setQueued(q) {
+  queued = q;
+  $('turn').innerHTML = q ? `<svg class="ico" viewBox="0 0 24 24">${TURN_ICON[q]}</svg>` : '';
+  $('turn').classList.toggle('on', !!q);
+}
+function steer(k) {
+  audioInit();
+  if (!alive) return;
+  setQueued(k === 'S' ? null : k);
+  SFX.queue();
+}
+function toggleGraph() {
+  if (!map.getLayer('graph')) return;
+  map.setLayoutProperty('graph', 'visibility', map.getLayoutProperty('graph', 'visibility') === 'none' ? 'visible' : 'none');
+}
+const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: 'S', KeyW: 'S' };
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;           // печатаем адрес — не рулим
+  if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) steer(KEYS[e.code]); }
+  if (e.code === 'KeyG') toggleGraph();
+  if (e.code === 'KeyH') setHint(!hintOn, true);
+  if (e.code === 'KeyM') setMuted(!muted);
+  if (e.code === 'Equal' || e.code === 'NumpadAdd') setZoom(zoomLvl + .5);
+  if (e.code === 'Minus' || e.code === 'NumpadSubtract') setZoom(zoomLvl - .5);
+  if (e.code === 'BracketRight' || e.code === 'PageUp') setMul(mulIdx + 1, true);
+  if (e.code === 'BracketLeft' || e.code === 'PageDown') setMul(mulIdx - 1, true);
+  if ((e.code === 'Space' || e.code === 'Enter') && !alive) { e.preventDefault(); start(); }
+});
+document.querySelectorAll('.pad button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); steer(b.dataset.k); }));
+const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.currentTarget.blur(); fn(); });
+onBtn('mute', () => setMuted(!muted));
+onBtn('zoomIn', () => setZoom(zoomLvl + .5));
+onBtn('zoomOut', () => setZoom(zoomLvl - .5));
+onBtn('faster', () => setMul(mulIdx + 1, true));
+onBtn('slower', () => setMul(mulIdx - 1, true));
+onBtn('hintBtn', () => setHint(!hintOn, true));
+setMuted(muted); setMul(mulIdx, false); setHint(hintOn, false);
+
+// ---------- цикл ----------
+let last = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (alive && map.getSource('body')) {
+    let v = speed * MULS[mulIdx];
+    if (now < slowUntil) v *= 0.55;
+    if (now < fastUntil) v *= 1.4;
+    advance(v * dt);
+    const hp = headPos(), b = brg(head.from, head.to);
+    map.getSource('body').setData(buildBody(hp));
+    if (hintOn) map.getSource('preview').setData(previewGeo(hp));
+    updateNav(hp);
+    music();
+    camB += norm(b - camB) * Math.min(1, dt * 3);
+    const ll = toLL(hp[0], hp[1]);
+    headMarker.setLngLat(ll).setRotation(b);
+    const z = map.getZoom();
+    map.jumpTo({ center: ll, bearing: camB, zoom: z + (zoomLvl - z) * Math.min(1, dt * 8) });
+    checkFood(hp, now);
+    $('score').textContent = score; $('len').textContent = Math.round(bodyLen); $('eaten').textContent = eaten;
+    if (hitSelf(hp)) gameOver();
+  }
+  requestAnimationFrame(frame);
+}
+function start() {
+  if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
+  reset(); alive = true;
+  $('start').classList.add('hidden'); $('over').classList.add('hidden');
+  audioInit(); SFX.start();
+  if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
+}
+function gameOver() {
+  alive = false;
+  SFX.crash();
+  if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
+  if (map.getSource('preview')) map.getSource('preview').setData(empty());
+  let best = 0;
+  try { best = Math.max(score, +localStorage.getItem('routeSnakeBest') || 0); localStorage.setItem('routeSnakeBest', best); } catch (e) { best = score; }
+  $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м. Рекорд: ${best} очков.`;
+  $('over').classList.remove('hidden');
+}
+$('go').onclick = start; $('again').onclick = start;
+requestAnimationFrame(t => { last = t; frame(t); });
+</script>
+</body>
+</html>
