@@ -112,6 +112,10 @@ if (inVK) {
            font-size: 14px; padding: 8px 14px; border-radius: 10px; z-index: 13; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: min(90vw, 420px); width: max-content;
            text-align: center; line-height: 1.35; }
   .toast.on { opacity: 1; }
+  /* потеря жизни: табличка красная и мигает */
+  .toast.danger { background: rgba(200,32,28,.94); font-weight: 600; animation: toastBlink .3s ease-in-out 6 alternate; }
+  @keyframes toastBlink { to { background: rgba(255,110,100,.96); } }
+  @media (prefers-reduced-motion: reduce) { .toast.danger { animation: none; } }
   #turn { position: absolute; top: calc(var(--gap) + var(--st)); left: 50%; transform: translateX(-50%); z-index: 12; width: 56px; height: 56px; border-radius: 14px;
           background: var(--blue); box-shadow: var(--shadow); display: grid; place-items: center; opacity: 0; transition: opacity .15s; pointer-events: none; }
   #turn .ico { stroke: #fff; width: 32px; height: 32px; stroke-width: 2.6; }
@@ -475,7 +479,7 @@ if (inVK) {
   <p>Змейка по настоящим улицам Москвы в пределах МКАД: собирай дорожные знаки и не врезайся в свой хвост.</p>
   <div class="tips">
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></svg></div>Поворот на ближайшем перекрёстке: кнопки внизу, свайп или стрелки</div>
-    <div class="tip"><div class="pico"><img src="signs/7.1.svg" alt="" style="width:22px;height:22px"></div>3 жизни. Мигают две стрелки — дорога упирается в перекрёсток: выбери поворот, иначе минус жизнь</div>
+    <div class="tip"><div class="pico"><img src="signs/7.1.svg" alt="" style="width:22px;height:22px"></div>3 жизни, знаки «+» на карте добавляют ещё, до 5. Мигают две стрелки — дорога упирается в перекрёсток: выбери поворот, иначе минус жизнь</div>
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
   </div>
   <div class="tabs modepick" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div>
@@ -648,7 +652,7 @@ const EFFECTS = [
   [/^5\.1$/, { speed: [1.7, 4000], text: 'разгон ×1.7' }],
   [/^5\.3$/, { speed: [1.35, 3500], text: 'разгон ×1.35' }],
   [/^7\.(3|21)$/, { speed: [1.5, 5000], text: 'заправка, разгон' }],
-  [/^7\.1$/, { life: 1, shield: 6000, text: '+1 жизнь (до 3) и щит на 6 с' }],
+  [/^7\.1$/, { life: 1, shield: 6000, text: '+1 жизнь (до 5) и щит на 6 с' }],
   [/^7\.(2|4)$/, { shield: 6000, text: 'щит: 6 с можно сквозь себя' }],
   [/^1\.25$/, { shrink: 60, text: 'хвост короче на 60 м' }],
   [/^7\.5$/, { shrink: 40, text: 'хвост короче на 40 м' }],
@@ -657,7 +661,7 @@ const EFFECTS = [
   [/^(1\.22|1\.23|5\.19\.\d)$/, { speed: [.6, 2500], text: 'пешеходы, медленнее' }],
   [/^5\.21$/, { speed: [.5, 3000], text: 'жилая зона, медленнее' }],
   [/^(1\.17|5\.20)$/, { speed: [.5, 1500], text: 'лежачий полицейский' }],
-  [/^3\.1$/, { brick: true, pts: 0, shrink: 40, text: 'хвост короче на 40 м, змейка краснеет, третий такой знак — авария' }],
+  [/^3\.1$/, { brick: true, pts: 0, shrink: 40, text: 'минус жизнь, хвост короче на 40 м, змейка краснеет' }],
   [/^3\.2$/, { pts: -2, text: 'штраф −2 очка' }],
   [/^7\.1[23]$/, { pts: -1, text: 'штраф −1 очко' }],
   [/^4\.1\.2$/, { force: 'R', text: 'змейка сама свернёт направо на ближайшем перекрёстке (↑ отменяет)' }],
@@ -670,8 +674,8 @@ function effectOf(k) {
   return null;
 }
 // таймерные эффекты считаются по игровому времени, чтобы пауза их не съедала
-let gameTime = 0, fx = [], bricks = 0;  // fx: { kind, until, f?, k }; bricks: съедено знаков «Въезд запрещён»
-const BRICKS_MAX = 3;
+let gameTime = 0, fx = [], bricks = 0;  // fx: { kind, until, f?, k }; bricks: съедено знаков «Въезд запрещён» — змейка краснеет
+const BRICKS_MAX = 3;                      // после третьего краснее уже не становится
 const DEFAULT_EFFECT = '+1 очко, змейка длиннее на 45 м';
 const SHRINK_SIGNS = ['1.25', '3.1'];   // «Дорожные работы», «Въезд запрещён»
 const fxActive = kind => fx.some(e => e.kind === kind && e.until > gameTime);
@@ -683,7 +687,7 @@ const FX_LABEL = { stop: 'стоп', shield: 'щит', invert: 'наоборот
 function renderFx() {
   fx = fx.filter(e => e.until > gameTime);
   const html = fx.map(e => `<div class="chip"><img src="signs/${e.k}.svg" alt="">${e.kind === 'speed' ? '×' + e.f.toFixed(1) : FX_LABEL[e.kind]} ${Math.ceil((e.until - gameTime) / 1000)}</div>`).join('');
-  const brick = bricks ? `<div class="chip danger"><img src="signs/3.1.svg" alt="">${bricks} из ${BRICKS_MAX}</div>` : '';
+  const brick = '';
   if ($('fx').innerHTML !== brick + html) $('fx').innerHTML = brick + html;
   headEl.classList.toggle('shield', fxActive('shield'));
 }
@@ -691,7 +695,7 @@ function applySign(k) {
   track('sign_eaten', { sign: k });
   const e = effectOf(k) || {};
   score = Math.max(0, score + (e.pts ?? 1));
-  if (e.shrink) bodyLen = Math.max(START_LEN, bodyLen - e.shrink); else bodyLen += e.grow || GROW;
+  if (e.shrink) bodyLen = Math.max(START_LEN, bodyLen - e.shrink); else if (!e.life) bodyLen += e.grow || GROW;   // жизнь змейку не удлиняет
   if (e.clear) fx = fx.filter(x => !(x.kind === 'speed' && x.f < 1) && x.kind !== 'stop');
   if (e.speed) fx.push({ kind: 'speed', f: e.speed[0], until: gameTime + e.speed[1], k });
   if (e.stop) fx.push({ kind: 'stop', until: gameTime + e.stop, k });
@@ -700,8 +704,9 @@ function applySign(k) {
   if (e.force) setQueued(e.force);
   if (e.life && lives < LIVES_MAX) { lives++; renderLives(); }
   if (e.brick) {
-    bricks++; applySkin();
-    if (bricks >= BRICKS_MAX) { gameOver('Три «кирпича»!'); return; }
+    bricks = Math.min(BRICKS_MAX, bricks + 1); applySkin();
+    loseLife('«Въезд запрещён», хвост короче на 40 м');
+    return;
   }
   if (e.pts < 0) SFX.slow(); else if (e.speed && e.speed[0] > 1) SFX.fast(); else if (e.speed || e.stop) SFX.slow(); else SFX.eat(Math.max(1, e.pts || 1));
   toast(`«${signName(k)}»${e.text ? ': ' + e.text : ''}`);
@@ -817,7 +822,7 @@ function reset() {
   map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
   traffic = pickTraffic(); sinceTraffic = 0;
   trail = [{ p: P[s], c: traffic }];
-  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0; lives = LIVES_MAX; renderLives(); if (typeof garage !== 'undefined') applySkin();
+  bodyLen = START_LEN; speed = BASE_SPEED; score = 0; eaten = 0; queued = null; navDirty = true; fx = []; gameTime = 0; bricks = 0; lives = LIVES_START; renderLives(); if (typeof garage !== 'undefined') applySkin();
   camB = brg(head.from, head.to);
   (foods || []).forEach(f => f.m.remove());
   foods = [];
@@ -1078,8 +1083,9 @@ function setMuted(m) {
 const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10];
 let mulIdx = MULS.indexOf(1), toastT;
 try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
-function toast(text, ms = 1400) {
+function toast(text, ms = 1400, danger = false) {
   $('toast').textContent = text; $('toast').classList.add('on');
+  $('toast').classList.remove('danger'); void $('toast').offsetWidth; $('toast').classList.toggle('danger', danger);
   clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), Math.max(ms, text.length * 45));
 }
 function setMul(i, show) {
@@ -1408,10 +1414,10 @@ function isForcedJunction(at, from) {
   return ADJ[at].filter(n => n !== from).every(n => Math.abs(norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB)) > 35);
 }
 // ---------- жизни: знак 7.1 «Пункт медицинской помощи» ----------
-const LIVES_MAX = 3;
-let lives = LIVES_MAX, lifeLostAt = -1e9;
+const LIVES_START = 3, LIVES_MAX = 5;      // в начале 3, подобранными знаками — до 5
+let lives = LIVES_START, lifeLostAt = -1e9;
 function renderLives() {
-  $('lives').innerHTML = Array.from({ length: LIVES_MAX }, (_, i) => `<img src="signs/7.1.svg" alt="" class="${i < lives ? '' : 'lost'}">`).join('');
+  $('lives').innerHTML = Array.from({ length: Math.max(LIVES_START, lives) }, (_, i) => `<img src="signs/7.1.svg" alt="" class="${i < lives ? '' : 'lost'}">`).join('');
 }
 renderLives();
 function loseLife(reason) {
@@ -1423,7 +1429,7 @@ function loseLife(reason) {
   track('life_lost', { left: lives });
   if (lives <= 0) { gameOver('Жизни закончились'); return; }
   tone(300, .25, { type: 'sine', to: 150, vol: .25 });
-  toast(`${reason}: −1 жизнь, осталось ${lives}`, 2200);
+  toast(`${reason}: минус жизнь, осталось ${lives}`, 2400, true);
 }
 function forcedJunctionAhead(hp) {
   let from = head.from, to = head.to, d = dist(hp, P[to]);
@@ -2153,15 +2159,16 @@ function biteFx(p) {
   setTimeout(() => w.remove(), 1000);
 }
 
-// ---------- жизни на карте: знак 7.1, съел — +1 жизнь (если жизней уже 3 — +2 очка) ----------
-const LIFE_COUNT = 2;
-let hearts = [];
+// ---------- жизни на карте: знак 7.1, съел — +1 жизнь, но не больше 5 ----------
+// на карте одна жизнь, новая появляется через 25 секунд после того, как подобрали прошлую
+const LIFE_COUNT = 1, LIFE_PAUSE = 25000;
+let hearts = [], nextLifeAt = 0;
 function spawnLife() {
   if (!head || !P.length) return;
-  const hp = headPos(), near = nodesNear(hp, 900);
+  const hp = headPos(), near = nodesNear(hp, 1100);
   let i, tries = 0;
   do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
-  while (tries < 300 && (dist(P[i], hp) < 250 || dist(P[i], hp) > 900 || hearts.some(h => dist(P[h.i], P[i]) < 400) || foods.some(f => dist(P[f.i], P[i]) < 80)));
+  while (tries < 300 && (dist(P[i], hp) < 400 || dist(P[i], hp) > 1100 || hearts.some(h => dist(P[h.i], P[i]) < 400) || foods.some(f => dist(P[f.i], P[i]) < 80)));
   const el = document.createElement('div');
   el.className = 'sign life'; el.title = '+1 жизнь';
   el.innerHTML = '<img src="signs/7.1.svg" alt="+1 жизнь" draggable="false">';
@@ -2172,15 +2179,16 @@ function checkLives(hp) {
     const h = hearts[j], d = dist(P[h.i], hp);
     if (d < EAT) {
       h.m.remove(); hearts.splice(j, 1);
-      if (lives < LIVES_MAX) { lives++; renderLives(); toast(`+1 жизнь, теперь ${lives}`); }
-      else { score += 2; toast('Жизней уже 3: +2 очка'); }
-      SFX.eat(3); track('life_pickup', { lives });
-      spawnLife();
-    } else if (d > 1400) { h.m.remove(); hearts.splice(j, 1); spawnLife(); }
+      if (lives < LIVES_MAX) { lives++; renderLives(); toast(`+1 жизнь, теперь ${lives}`); SFX.eat(3); }
+      else toast(`Жизней уже ${LIVES_MAX} — больше не нужно`);
+      track('life_pickup', { lives });
+      nextLifeAt = gameTime + LIFE_PAUSE;
+    } else if (d > 1600) { h.m.remove(); hearts.splice(j, 1); spawnLife(); }
   }
+  if (hearts.length < LIFE_COUNT && gameTime >= nextLifeAt) spawnLife();
 }
 function resetLives() {
-  hearts.forEach(h => h.m.remove()); hearts = [];
+  hearts.forEach(h => h.m.remove()); hearts = []; nextLifeAt = 0;
   for (let i = 0; i < LIFE_COUNT; i++) spawnLife();
 }
 
