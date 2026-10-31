@@ -99,13 +99,12 @@ if (inVK) {
   .arch.done svg { animation: archWin .35s ease-in-out 6 alternate; }
   @keyframes archWin { to { transform: scale(1.18); } }
   .navbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(98px + var(--sb)); z-index: 12; display: flex; align-items: stretch;
-            background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; pointer-events: none; white-space: nowrap; }
-  .nturn { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--route); color: #fff; }
-  .nturn .ico { stroke: #fff; width: 26px; height: 26px; stroke-width: 2.6; }
-  .nturn b { font-size: 17px; font-variant-numeric: tabular-nums; }
-  .nrest { display: flex; flex-direction: column; justify-content: center; padding: 6px 14px; line-height: 1.15; }
-  .nrest b { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
-  .nrest small { font-size: 11px; color: var(--muted); }
+            background: var(--route); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; pointer-events: none; white-space: nowrap; }
+  .nturn { display: flex; align-items: center; gap: 10px; padding: 7px 18px 7px 14px; min-width: 196px; box-sizing: border-box; background: var(--route); color: #fff; }
+  .nturn .ico { stroke: #fff; width: 30px; height: 30px; stroke-width: 2.6; }
+  .ntext { display: flex; flex-direction: column; line-height: 1.15; }
+  .nturn b { font-size: 19px; font-variant-numeric: tabular-nums; }
+  .nturn small { font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
   body.navon .fx { bottom: calc(158px + var(--sb)); }
   @media (prefers-reduced-motion: reduce) { .arch.done svg { animation: none; } }
   .toast { position: absolute; top: calc(var(--gap) + var(--st) + var(--btn) + 14px); left: 50%; transform: translateX(-50%); background: rgba(26,26,26,.85); color: #fff;
@@ -464,8 +463,7 @@ if (inVK) {
 <div id="hurt"></div>
 <div class="fx" id="fx"></div>
 <div class="navbar hidden" id="navbar">
-  <div class="nturn" id="nturn"><svg class="ico" viewBox="0 0 24 24" id="nturnIco"></svg><b id="nturnDist"></b></div>
-  <div class="nrest"><b id="nrest"></b><small>до финиша</small></div>
+  <div class="nturn" id="nturn"><svg class="ico" viewBox="0 0 24 24" id="nturnIco"></svg><div class="ntext"><b id="nturnDist"></b><small id="nrest"></small></div></div>
 </div>
 <div class="toast" id="toast"></div>
 <div class="fxlayer" id="fxlayer"></div>
@@ -1256,8 +1254,10 @@ function updateNav(hp) {
   const turnIn = nav.turn ? toNode + nav.cum[nav.turn.k] - base : null;
   const ico = nav.turn && turnIn < 2000 ? TURN_ICON[nav.turn.dir] : '<path d="M12 20V5"/><path d="M7 10l5-5 5 5"/>';
   if ($('nturnIco').innerHTML !== ico) $('nturnIco').innerHTML = ico;
-  $('nturnDist').textContent = distText(nav.turn && turnIn < 2000 ? turnIn : rest);
-  $('nrest').textContent = distText(rest);
+  // крупно — до поворота, мелко — до финиша; если поворота впереди нет, крупно — до финиша
+  const showTurn = nav.turn && turnIn < 2000;
+  $('nturnDist').textContent = distText(showTurn ? turnIn : rest);
+  $('nrest').textContent = showTurn ? 'до финиша ' + distText(rest) : 'до финиша';
   navTalk(rest, turnIn);
 }
 // ---------- голосовые подсказки маршрута: не чаще раза в 30 секунд игры ----------
@@ -1458,11 +1458,26 @@ function setQueued(q, target = -1) {
   $('turn').classList.toggle('on', !!q);
   $('turn').classList.remove('ask'); askShown = false;
 }
+// ближайший перекрёсток впереди (не дальше maxD и не дальше stopAt), где есть съезд в сторону k
+function nearTurnJunction(k, maxD, stopAt) {
+  let from = head.from, to = head.to, d = dist(headPos(), P[to]);
+  for (let i = 0; i < 60 && d < maxD && to !== stopAt; i++) {
+    if (ADJ[to].length >= 3 && pickExit(to, from, 0, k).used) return to;
+    const r = pickExit(to, from, 0, null);
+    if (r.n === from) break;
+    from = to; to = r.n; d += dist(P[from], P[to]);
+  }
+  return -1;
+}
 function steer(k) {
   audioInit();
   if (!alive || paused || quiz || held) return;
   if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
-  setQueued(k === 'S' ? null : k, askShown ? askTarget : -1);
+  let target = askShown ? askTarget : -1;
+  // мигает предупреждение о дальнем Т-перекрёстке, а прямо перед носом перекрёсток со съездом в эту сторону:
+  // игрок жмёт именно на него. На большой скорости предупреждение горит заранее и раньше «забирало» такие нажатия
+  if (target >= 0 && k !== 'S') { const near = nearTurnJunction(k, Math.max(60, curV * 1.2), target); if (near >= 0) target = near; }
+  setQueued(k === 'S' ? null : k, target);
   SFX.queue();
 }
 function toggleGraph() {
