@@ -673,7 +673,7 @@ function effectOf(k) {
 let gameTime = 0, fx = [], bricks = 0;  // fx: { kind, until, f?, k }; bricks: съедено знаков «Въезд запрещён»
 const BRICKS_MAX = 3;
 const DEFAULT_EFFECT = '+1 очко, змейка длиннее на 45 м';
-const SHRINK_SIGNS = ['1.25', '7.5', '3.1'];   // «Дорожные работы», «Мойка», «Въезд запрещён»
+const SHRINK_SIGNS = ['1.25', '3.1'];   // «Дорожные работы», «Въезд запрещён»
 const fxActive = kind => fx.some(e => e.kind === kind && e.until > gameTime);
 function speedFactor() {
   if (fxActive('stop')) return 0;
