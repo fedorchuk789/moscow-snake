@@ -25,6 +25,21 @@ service cloud.firestore {
         );
     }
 
+    // Таблица режима ПДД: те же правила, плюс число верных ответов и заданных вопросов.
+    match /scoresPdd/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'score', 'eaten', 'len', 'speed', 'date', 'kind', 'right', 'asked'])
+        && validGame(request.resource.data)
+        && request.resource.data.right is int && request.resource.data.asked is int
+        && request.resource.data.right >= 0 && request.resource.data.right <= request.resource.data.asked
+        && (resource == null || request.resource.data.score >= resource.data.score)
+        && (
+          (request.auth != null && id == request.auth.uid && request.resource.data.kind == 'google')
+          || (id.matches('a_[0-9a-f]{64}') && request.resource.data.kind == 'code'
+              && getAfter(/databases/$(database)/documents/anon/$(id.split('_')[1])).data.updatedAt == request.time)
+        );
+    }
+
     // История игр вошедшего через Google: видит только он сам, с любого устройства.
     match /users/{uid}/games/{game} {
       allow read: if request.auth != null && request.auth.uid == uid;

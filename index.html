@@ -518,6 +518,7 @@ if (inVK) {
       <button class="x" id="recordsClose" aria-label="Назад"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
       <h2>Рекорды</h2>
     </header>
+    <div class="tabs" id="recMode"><button class="tab" data-rmode="classic">Классический</button><button class="tab" data-rmode="pdd">ПДД</button></div>
     <div class="tabs"><button class="tab on" data-tab="all">Все</button><button class="tab" data-tab="mine">Мои</button></div>
     <div class="grp"><ol class="rlist" id="rlist"></ol></div>
     <div class="grp"><div class="row tall"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></i><div class="account"></div></div></div>
@@ -1495,58 +1496,64 @@ function setPlayerCode(c) {
   try { playerCode ? localStorage.setItem('routeSnakeCode', playerCode) : localStorage.removeItem('routeSnakeCode'); } catch (e) {}
   renderAccount();
 }
-const gameData = rec => ({ name: (rec.name || 'Игрок').slice(0, 24), score: rec.score | 0, eaten: rec.eaten | 0, len: rec.len | 0, speed: +rec.speed || 1, date: rec.date });
-let myRowId = null;    // строка игрока в общей таблице, чтобы подсветить её
+const gameData = rec => ({ name: (rec.name || 'Игрок').slice(0, 24), score: rec.score | 0, eaten: rec.eaten | 0, len: rec.len | 0, speed: +rec.speed || 1, date: rec.date,
+  ...(rec.mode === 'pdd' ? { right: rec.right | 0, asked: rec.asked | 0 } : {}) });
+// у каждого режима своя общая таблица; старые записи без режима — классические
+const SCORES = { classic: 'scores', pdd: 'scoresPdd' };
+const modeOf = r => r.mode === 'pdd' ? 'pdd' : 'classic';
+let myRowId = null;    // строка игрока в общей таблице, чтобы подсветить её (id одинаковый в обеих таблицах)
 
 const REMOTE = {
-  async load() {
+  async load(mode) {
     await initFirebase();
-    const snap = await db.collection('scores').orderBy('score', 'desc').limit(50).get();
+    const snap = await db.collection(SCORES[mode]).orderBy('score', 'desc').limit(50).get();
     return snap.docs.map(d => ({ ...d.data(), id: d.id }));
   },
-  async mine() {
+  async mine(mode) {
     await initFirebase();
     if (fbUser) {
-      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(30).get();
-      return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(100).get();
+      return snap.docs.map(d => ({ ...d.data(), id: d.id })).filter(r => modeOf(r) === mode);
     }
     if (playerCode) {
       const doc = await db.collection('anon').doc(await codeHash(playerCode)).get();
-      return doc.exists ? doc.data().games || [] : [];
+      return doc.exists ? (doc.data().games || []).filter(r => modeOf(r) === mode) : [];
     }
     return null;
   },
   async submit(rec) {
     await initFirebase();
-    const data = gameData(rec);
+    const data = gameData(rec), mode = modeOf(rec), table = db.collection(SCORES[mode]);
     if (fbUser) {
-      await db.collection('users').doc(fbUser.uid).collection('games').add(data);
-      const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+      await db.collection('users').doc(fbUser.uid).collection('games').add({ ...data, mode });
+      const ref = table.doc(fbUser.uid), cur = await ref.get();
       if (!cur.exists || data.score >= cur.data().score) await ref.set({ ...data, kind: 'google' });   // в таблице — лучший результат
       myRowId = fbUser.uid;
       return;
     }
     if (!playerCode) setPlayerCode(newCode());
     const h = await codeHash(playerCode), ref = db.collection('anon').doc(h), cur = await ref.get();
-    const games = [...(cur.exists ? cur.data().games || [] : []), data].sort(byScore).slice(0, 50);
-    const best = Math.max(data.score, cur.exists ? cur.data().best || 0 : 0);
+    const games = [...(cur.exists ? cur.data().games || [] : []), { ...data, mode }].sort(byScore).slice(0, 50);
+    // best в документе кода — лучший классический результат, как и раньше
+    const best = Math.max(mode === 'classic' ? data.score : 0, cur.exists ? cur.data().best || 0 : 0);
+    const row = table.doc('a_' + h), rowCur = await row.get();
     const batch = db.batch();
     batch.set(ref, { code: playerCode, games, best, name: data.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     // строку общей таблицы правила пускают только вместе с записью, подтверждённой кодом
-    if (data.score >= best) batch.set(db.collection('scores').doc('a_' + h), { ...data, kind: 'code' });
+    if (!rowCur.exists || data.score >= rowCur.data().score) batch.set(row, { ...data, kind: 'code' });
     await batch.commit();
     myRowId = 'a_' + h;
   },
   async rename(name) {
     if (!db) return;
-    if (fbUser) {
-      const ref = db.collection('scores').doc(fbUser.uid), cur = await ref.get();
+    if (fbUser) for (const t of Object.values(SCORES)) {
+      const ref = db.collection(t).doc(fbUser.uid), cur = await ref.get();
       if (cur.exists) await ref.set({ ...cur.data(), name: name.slice(0, 24) });
     }
   },
-  async place(score) {
+  async place(score, mode) {
     // count() в compat-версии SDK нет: берём документы с большим счётом, таблица небольшая
-    const snap = await db.collection('scores').where('score', '>', score).limit(1000).get();
+    const snap = await db.collection(SCORES[mode]).where('score', '>', score).limit(1000).get();
     return snap.size + 1;
   },
   async codeExists(c) {
@@ -1556,9 +1563,10 @@ const REMOTE = {
 };
 // первый вход через Google на устройстве: переносим лучший результат, сыгранный до входа
 async function uploadLocalBest() {
-  const best = localScores().filter(r => !r.synced).sort(byScore)[0];
-  if (!best || !best.score) return;
-  await REMOTE.submit({ ...best, name: nick || best.name });
+  for (const mode of Object.keys(SCORES)) {
+    const best = localScores().filter(r => !r.synced && modeOf(r) === mode).sort(byScore)[0];
+    if (best && best.score) await REMOTE.submit({ ...best, name: nick || best.name });
+  }
   const list = localScores(); list.forEach(r => { r.synced = true; }); saveLocalScores(list);
 }
 
@@ -1646,47 +1654,54 @@ function localScores() { try { return JSON.parse(localStorage.getItem('routeSnak
 function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
 const byScore = (a, b) => b.score - a.score || b.len - a.len;
 async function submitScore() {
-  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], revived: revivedThisRun, date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6) };
-  const list = [...localScores(), rec].sort(byScore);
-  $('rank').textContent = score > 0 ? `${list.findIndex(r => r.id === rec.id) + 1}-е место в рекордах этого устройства` : '';
+  const mode = runMode();
+  const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], revived: revivedThisRun, date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6),
+    mode, ...(mode === 'pdd' ? { right: quizRight, asked: quizAsked } : {}) };
+  const list = [...localScores(), rec].sort(byScore).filter(r => modeOf(r) === mode);
+  const where = mode === 'pdd' ? ' режима ПДД' : '';
+  $('rank').textContent = score > 0 ? `${list.findIndex(r => r.id === rec.id) + 1}-е место в рекордах${where} на этом устройстве` : '';
   if (score > 0) {
     rec.synced = !!fbUser;
     REMOTE.submit(rec).then(() => {
       if (!fbUser) $('codeNote').innerHTML = `Рекорд сохранён по коду <b>${prettyCode(playerCode)}</b>. Код есть в меню, с ним рекорды откроются на любом устройстве.`;
-      return REMOTE.place(score);
-    }).then(p => { $('rank').textContent = `${p}-е место в общей таблице`; }).catch(() => {});
+      return REMOTE.place(score, mode);
+    }).then(p => { $('rank').textContent = `${p}-е место в общей таблице${where}`; }).catch(() => {});
   }
-  saveLocalScores(list);
+  saveLocalScores([...localScores(), rec].sort(byScore));
   return rec;
 }
-let lastRecId = null, recTab = 'all';
+let lastRecId = null, recTab = 'all', recMode = null;
 const speedLabel = s => '×' + (+s || 1).toString().replace('.', ',');
 async function showRecords() {
   showPage('records', $('panel').classList.contains('hidden') ? null : 'menu');
   renderAccount();
+  recMode ||= gameMode;                   // по умолчанию — таблица режима, в котором играете
+  document.querySelectorAll('[data-rmode]').forEach(t => t.classList.toggle('on', t.dataset.rmode === recMode));
   $('rlist').innerHTML = '<li class="emptyrow">Загружаю…</li>';
   let list = null, note = '';
   try {
     const timeout = new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 8000));
-    list = await Promise.race([recTab === 'all' ? REMOTE.load() : REMOTE.mine(), timeout]);
-    note = recTab === 'all' ? 'Общая таблица: лучший результат каждого игрока.' : fbUser ? 'Ваши игры на всех устройствах с этим Google-аккаунтом.' : 'Ваши игры по коду игрока.';
+    list = await Promise.race([recTab === 'all' ? REMOTE.load(recMode) : REMOTE.mine(recMode), timeout]);
+    const of = recMode === 'pdd' ? ' в режиме ПДД' : ' в классическом режиме';
+    note = recTab === 'all' ? `Общая таблица: лучший результат каждого игрока${of}.` : fbUser ? `Ваши игры${of} на всех устройствах с этим Google-аккаунтом.` : `Ваши игры${of} по коду игрока.`;
   } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
   if (!list) {
-    list = localScores();
+    list = localScores().filter(r => modeOf(r) === recMode);
     if (!note) note = 'Рекорды этого устройства.';
   }
   list = list.sort(byScore).slice(0, 30);
   const me = r => r.id === lastRecId || (recTab === 'all' && r.id && r.id === myRowId);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.eaten} зн. · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}${r.revived ? '<span class="rev">с запаской</span>' : ''}</small></span><span class="pts">${r.score}</span></li>`).join('')
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.asked ? `ответов ${r.right} из ${r.asked}` : r.eaten + ' зн.'} · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}${r.revived ? '<span class="rev">с запаской</span>' : ''}</small></span><span class="pts">${r.score}</span></li>`).join('')
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 document.querySelectorAll('.tab[data-tab]').forEach(t => t.onclick = () => {
   recTab = t.dataset.tab; document.querySelectorAll('.tab[data-tab]').forEach(x => x.classList.toggle('on', x === t)); showRecords();
 });
-$('menuRecords').onclick = showRecords;
-$('overRecords').onclick = showRecords;
+document.querySelectorAll('[data-rmode]').forEach(t => t.onclick = () => { recMode = t.dataset.rmode; showRecords(); });
+$('menuRecords').onclick = () => { recMode = null; showRecords(); };
+$('overRecords').onclick = () => { recMode = runMode(); showRecords(); };
 $('overMenu').onclick = () => { syncMenu(); showPage('menu'); };
 $('recordsClose').onclick = () => pageBack ? showPage(pageBack) : closePanel();
 $('nameSave').onclick = () => {
@@ -1892,7 +1907,9 @@ const MODE_NOTE = {
   classic: 'Знаки сразу дают очки и свой эффект',
   pdd: 'Съел знак — выбери его название за 15 секунд. Верно: +2 очка и эффект знака, ошибка — минус жизнь',
 };
-let gameMode = 'classic', quiz = null, quizAsked = 0, quizRight = 0;
+let gameMode = 'classic', quiz = null, quizAsked = 0, quizRight = 0, runStartMode = 'classic', modeSwitched = false;
+// в таблицу ПДД попадает только заезд, целиком сыгранный в режиме ПДД
+const runMode = () => runStartMode === 'pdd' && !modeSwitched ? 'pdd' : 'classic';
 const askedNames = new Set();
 try { if (localStorage.getItem('routeSnakeMode') === 'pdd') gameMode = 'pdd'; } catch (e) {}
 function setMode(m) {
@@ -1907,6 +1924,7 @@ function switchMode(m) {
   setMode(m);
   track('mode', { mode: m });
   if (!alive) return;
+  modeSwitched = true;
   toast(m === 'pdd' ? 'Режим ПДД: за каждый знак — вопрос' : 'Классический режим');
   // знаки на карте ставим заново, чтобы в режиме ПДД они не повторялись
   foods.forEach(f => f.m.remove()); foods = [];
@@ -2028,7 +2046,7 @@ function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   if (!runFinished) finishRun();          // ушли со страницы аварии, не выбрав запаску
   reset(); alive = true; paused = false;
-  quiz = null; closeOverlay('quiz'); askedNames.clear(); quizAsked = quizRight = 0;
+  quiz = null; closeOverlay('quiz'); askedNames.clear(); quizAsked = quizRight = 0; runStartMode = gameMode; modeSwitched = false;
   runLiters = 0; kmPaid = 0; odo0 = odo; revivedThisRun = false; runFinished = true;
   $('earned').textContent = ''; $('reviveBox').classList.add('hidden');
   ['start', 'over'].forEach(closeOverlay); closePanel();
