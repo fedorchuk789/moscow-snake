@@ -93,6 +93,21 @@ if (inVK) {
   .place.empty .pedit { display: none; }
   .pin { width: 38px; height: 38px; border-radius: 50%; background: var(--route); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; }
   .pin svg { width: 20px; height: 20px; fill: #fff; }
+  /* финишная арка в точке маршрута и панель «сколько осталось» */
+  .arch { pointer-events: none; }
+  .arch svg { display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); transform-origin: 50% 100%; }
+  .arch.done svg { animation: archWin .35s ease-in-out 6 alternate; }
+  @keyframes archWin { to { transform: scale(1.18); } }
+  .navbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(98px + var(--sb)); z-index: 12; display: flex; align-items: stretch;
+            background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; pointer-events: none; white-space: nowrap; }
+  .nturn { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--route); color: #fff; }
+  .nturn .ico { stroke: #fff; width: 26px; height: 26px; stroke-width: 2.6; }
+  .nturn b { font-size: 17px; font-variant-numeric: tabular-nums; }
+  .nrest { display: flex; flex-direction: column; justify-content: center; padding: 6px 14px; line-height: 1.15; }
+  .nrest b { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .nrest small { font-size: 11px; color: var(--muted); }
+  body.navon .fx { bottom: calc(158px + var(--sb)); }
+  @media (prefers-reduced-motion: reduce) { .arch.done svg { animation: none; } }
   .toast { position: absolute; top: calc(var(--gap) + var(--st) + var(--btn) + 14px); left: 50%; transform: translateX(-50%); background: rgba(26,26,26,.85); color: #fff;
            font-size: 14px; padding: 8px 14px; border-radius: 10px; z-index: 13; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: min(90vw, 420px); width: max-content;
            text-align: center; line-height: 1.35; }
@@ -400,6 +415,11 @@ if (inVK) {
     <div class="ptext"><b>На работу</b><span class="paddr"></span><input class="pinput hidden" placeholder="Улица, дом" enterkeyhint="done"></div>
     <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
   </div>
+  <div class="place" data-key="any">
+    <div class="pico"><svg viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 3.5L16 11H7v10z"/></svg></div>
+    <div class="ptext"><b>Куда угодно</b><span class="paddr"></span><input class="pinput hidden" placeholder="Адрес или место" enterkeyhint="done"></div>
+    <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+  </div>
 </div>
 <div class="side">
   <button class="btn" id="menuBtn" title="Меню и пауза (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -419,6 +439,10 @@ if (inVK) {
 <div id="turn"></div>
 <div id="hurt"></div>
 <div class="fx" id="fx"></div>
+<div class="navbar hidden" id="navbar">
+  <div class="nturn" id="nturn"><svg class="ico" viewBox="0 0 24 24" id="nturnIco"></svg><b id="nturnDist"></b></div>
+  <div class="nrest"><b id="nrest"></b><small>до финиша</small></div>
+</div>
 <div class="toast" id="toast"></div>
 <div class="pad">
   <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -483,6 +507,7 @@ if (inVK) {
       <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0.2" max="10" step="0.05" aria-label="Скорость змейки"></div>
       <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
+      <label class="row" for="voiceToggle"><i class="ri"></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
       <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
     <div class="grp">
@@ -1059,9 +1084,10 @@ function setHint(on, show) {
 const PLACE_ICON = {
   home: '<svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20h-5v-5h-6v5H4z"/></svg>',
   work: '<svg viewBox="0 0 24 24"><path d="M3.5 8.5h17V19h-17z"/><path d="M9 8.5V6h6v2.5" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  any: '<svg viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 3.5L16 11H7v10z"/></svg>',
 };
-const PLACE_NAME = { home: 'Дом', work: 'Работа' };
-let places = {}, nav = null, navDirty = true;      // nav = { key, node, marker }
+const ARRIVED = { home: 'Вы дома', work: 'Вы на работе', any: 'Вы на месте' };
+let places = {}, nav = null, navDirty = true;      // nav = { key, node, marker, path, cum, len, turn, lastSay }
 try { places = JSON.parse(localStorage.getItem('routeSnakePlaces')) || {}; } catch (e) {}
 for (const k in places) if (!places[k] || !places[k].ll) delete places[k];   // старый формат хранил номер узла
 const savePlaces = () => { try { localStorage.setItem('routeSnakePlaces', JSON.stringify(places)); } catch (e) {} };
@@ -1097,34 +1123,128 @@ function renderPlaces() {
     el.classList.toggle('active', !!nav && nav.key === el.dataset.key);
   });
 }
+// финишная арка стоит в точке маршрута, при прибытии подпрыгивает и исчезает
+let archN = 0;
+function archEl() {
+  const el = document.createElement('div'), id = 'chk' + archN++;
+  el.className = 'arch';
+  el.innerHTML = `<svg width="96" height="80" viewBox="0 0 96 80"><defs><pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#fff"/><rect width="4" height="4" fill="#1a1a1a"/><rect x="4" y="4" width="4" height="4" fill="#1a1a1a"/></pattern></defs>
+    <rect x="7" y="12" width="7" height="68" rx="2" fill="#5b3fd6"/><rect x="82" y="12" width="7" height="68" rx="2" fill="#5b3fd6"/>
+    <rect x="2" y="4" width="92" height="28" rx="6" fill="#7b5cff"/><rect x="6" y="8" width="84" height="7" fill="url(#${id})"/>
+    <text x="48" y="28" font-size="12" font-weight="800" fill="#fff" text-anchor="middle" font-family="system-ui, sans-serif" letter-spacing="1.5">ФИНИШ</text></svg>`;
+  return el;
+}
 function setNav(key) {
   if (nav) { nav.marker.remove(); nav = null; }
   if (map.getSource('nav')) map.getSource('nav').setData(empty());
   if (key && places[key]) {
-    const el = document.createElement('div');
-    el.className = 'pin'; el.innerHTML = PLACE_ICON[key];
     const ll = places[key].ll, node = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY)[0];
-    nav = { key, node, marker: new maplibregl.Marker({ element: el }).setLngLat(NODES[node]).addTo(map) };
+    nav = { key, node, marker: new maplibregl.Marker({ element: archEl(), anchor: 'bottom' }).setLngLat(NODES[node]).addTo(map),
+            path: [], cum: [], len: 0, turn: null, lastSay: -1e9, said: 0, announced: false, coords: [] };
     navDirty = true;
     toast('Маршрут: ' + places[key].addr);
     track('route_set', { place: key });
   }
+  document.body.classList.toggle('navon', !!nav);
+  $('navbar').classList.toggle('hidden', !nav);
   renderPlaces();
+}
+// следующий поворот по маршруту: на перекрёстке направление меняется больше чем на 35°
+const brgPt = (a, b) => Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
+function findTurn(pts, cum) {
+  const at = s => {                        // точка на ломаной в s метрах от начала
+    s = Math.max(0, Math.min(cum[cum.length - 1], s));
+    let k = 1; while (k < cum.length - 1 && cum[k] < s) k++;
+    const t = (s - cum[k - 1]) / Math.max(1e-6, cum[k] - cum[k - 1]);
+    return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t];
+  };
+  for (let k = 1; k < pts.length - 1 && cum[k] < 3000; k++) {
+    if (ADJ[nav.path[k - 1]].length < 3) continue;
+    const d = norm(brgPt(pts[k], at(cum[k] + 40)) - brgPt(at(cum[k] - 30), pts[k]));
+    if (Math.abs(d) > 35) return { k, dir: d > 0 ? 'R' : 'L' };
+  }
+  return null;
 }
 function updateNav(hp) {
   if (!nav || !map.getSource('nav')) return;
   if (dist(hp, P[nav.node]) < 22) {
     track('route_arrive', { place: nav.key });
-    score += 5; addLiters(10); SFX.arrive(); toast(PLACE_NAME[nav.key] + '! +5 очков');
+    score += 5; addLiters(10); SFX.arrive(); toast(ARRIVED[nav.key] + '! +5 очков');
+    say('Вы приехали', false);
+    const m = nav.marker; m.getElement().classList.add('done');
+    nav.marker = { remove() {} }; setTimeout(() => m.remove(), 2200);
     setNav(null); return;
   }
-  if (!navDirty) { nav.coords[0] = toLL(hp[0], hp[1]); }
+  if (!navDirty) { if (nav.coords.length) nav.coords[0] = toLL(hp[0], hp[1]); }
   else {
     navDirty = false;
     const r = shortestPath(head.to, nav.node, head.from);
+    nav.path = r ? r.path : []; nav.len = r ? r.len : 0;
     nav.coords = r ? [toLL(hp[0], hp[1]), ...r.path.map(i => NODES[i])] : [];
+    // ломаная от предыдущего узла: так виден угол на первом же перекрёстке
+    const pts = [P[head.from], ...nav.path.map(i => P[i])], cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + dist(pts[i - 1], pts[i]));
+    nav.cum = cum;
+    nav.turn = pts.length > 2 ? findTurn(pts, cum) : null;
   }
   map.getSource('nav').setData(nav.coords.length > 1 ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: nav.coords } } : empty());
+  // сколько осталось и где следующий поворот
+  const toNode = dist(hp, P[head.to]), base = nav.cum[1] || 0;
+  const rest = nav.path.length ? nav.len + toNode : dist(hp, P[nav.node]);
+  const turnIn = nav.turn ? toNode + nav.cum[nav.turn.k] - base : null;
+  const ico = nav.turn && turnIn < 2000 ? TURN_ICON[nav.turn.dir] : '<path d="M12 20V5"/><path d="M7 10l5-5 5 5"/>';
+  if ($('nturnIco').innerHTML !== ico) $('nturnIco').innerHTML = ico;
+  $('nturnDist').textContent = distText(nav.turn && turnIn < 2000 ? turnIn : rest);
+  $('nrest').textContent = distText(rest);
+  navTalk(rest, turnIn);
+}
+// ---------- голосовые подсказки маршрута: не чаще раза в 30 секунд игры ----------
+const SAY_EVERY = 30000;
+let voiceOn = true;
+try { voiceOn = localStorage.getItem('routeSnakeVoice') !== '0'; } catch (e) {}
+function setVoice(on) {
+  voiceOn = on;
+  try { localStorage.setItem('routeSnakeVoice', on ? '1' : '0'); } catch (e) {}
+  if (!on && window.speechSynthesis) speechSynthesis.cancel();
+}
+const plural = (n, one, few, many) => { const a = n % 100, b = n % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many; };
+function distText(m, spoken) {
+  if (m < 950) {
+    const r = m < 100 ? Math.max(10, Math.round(m / 10) * 10) : Math.round(m / 50) * 50;
+    return r + (spoken ? ' метров' : ' м');
+  }
+  const km = m / 1000;
+  if (!spoken) return (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)) + ' км';
+  if (km < 10 && Math.abs(km - Math.round(km)) >= .05) return km.toFixed(1).replace('.', ',') + ' километра';
+  const n = Math.round(km);
+  return n + ' ' + plural(n, 'километр', 'километра', 'километров');
+}
+let ruVoice;
+function say(text, show = true) {
+  if (!voiceOn) return;
+  if (show) toast(text, 2600);
+  if (muted || !window.speechSynthesis) return;
+  try {
+    ruVoice ||= speechSynthesis.getVoices().find(v => /^ru/i.test(v.lang));
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ru-RU'; u.rate = 1.05; if (ruVoice) u.voice = ruVoice;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function navTalk(rest, turnIn) {
+  if (!voiceOn || !nav.path.length) return;
+  if (!nav.announced) {                    // сразу после построения маршрута
+    nav.announced = true; nav.lastSay = gameTime;
+    say('Маршрут построен. Ехать ' + distText(rest, true));
+    return;
+  }
+  if (gameTime - nav.lastSay < SAY_EVERY) return;
+  nav.lastSay = gameTime; nav.said++;
+  const side = nav.turn && nav.turn.dir === 'R' ? 'направо' : 'налево';
+  if (rest < 400) say('Финиш через ' + distText(rest, true));
+  else if (nav.turn && turnIn < 600) say(`Через ${distText(turnIn, true)} поверните ${side}`);
+  else if (nav.said % 2 && nav.turn) say(`Двигайтесь прямо ${distText(turnIn, true)}, затем поверните ${side}`);
+  else say('До конца маршрута осталось ' + distText(rest, true));
 }
 async function geocode(q) {
   // Nominatim (OpenStreetMap), ищем только в игровой зоне
@@ -1141,12 +1261,20 @@ function editPlace(el) {
   inp.value = places[key] ? places[key].addr : '';
   inp.classList.remove('hidden'); addr.classList.add('hidden');
   inp.focus();
-  const close = () => { inp.classList.add('hidden'); addr.classList.remove('hidden'); inp.onkeydown = inp.onblur = null; };
-  inp.onblur = close;
-  inp.onkeydown = async e => {
+  setHeld(true);
+  const close = () => {
+    inp.classList.add('hidden'); addr.classList.remove('hidden'); inp.onkeydown = inp.onblur = null;
+    setHeld(narrow() && $('places').classList.contains('open'));
+  };
+  // ушли из поля, не нажав Enter, — адрес всё равно ищем и сохраняем
+  inp.onblur = () => { const q = inp.value.trim(); if (q && q !== (places[key] ? places[key].addr : '')) submit(); else close(); };
+  inp.onkeydown = e => {
     e.stopPropagation();
     if (e.key === 'Escape') { close(); return; }
-    if (e.key !== 'Enter') return;
+    if (e.key === 'Enter') submit();
+  };
+  const submit = async () => {
+    inp.onblur = () => close();
     const q = inp.value.trim();
     if (!q) {                                      // пустая строка — удалить адрес
       delete places[key]; savePlaces(); if (nav && nav.key === key) setNav(null); close(); renderPlaces(); return;
@@ -1154,7 +1282,7 @@ function editPlace(el) {
     toast('Ищу адрес…');
     try {
       const ll = await geocode(q);
-      if (!ll) { toast('Не нашёл адрес в игровой зоне (центр Москвы)'); return; }
+      if (!ll) { toast('Не нашёл адрес в пределах МКАД'); return; }
       const [, off] = nearestNode((ll[0] - LNG0) * KX, (ll[1] - LAT0) * KY);
       if (off > 400) { toast('Адрес вне игровой зоны'); return; }
       places[key] = { addr: q, ll };
@@ -1238,7 +1366,7 @@ function setQueued(q, target = -1) {
 }
 function steer(k) {
   audioInit();
-  if (!alive || paused || quiz) return;
+  if (!alive || paused || quiz || held) return;
   if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
   setQueued(k === 'S' ? null : k, askShown ? askTarget : -1);
   SFX.queue();
@@ -1339,9 +1467,12 @@ const narrow = () => matchMedia('(max-width: 640px)').matches;
 $('placesBtn').addEventListener('click', e => {
   e.currentTarget.blur();
   $('places').classList.toggle('open');
-  $('placesBtn').classList.toggle('on', $('places').classList.contains('open'));
+  const open = $('places').classList.contains('open');
+  $('placesBtn').classList.toggle('on', open);
+  setHeld(open);
 });
-function closePlaces() { if (narrow()) { $('places').classList.remove('open'); $('placesBtn').classList.remove('on'); } }
+function closePlaces() { if (narrow()) { $('places').classList.remove('open'); $('placesBtn').classList.remove('on'); } setHeld(false); }
+$('map').addEventListener('pointerdown', () => { if (narrow() && $('places').classList.contains('open')) closePlaces(); });
 // подпись OpenStreetMap — свёрнутой кнопкой «i», чтобы не лезла под пальцы
 map.on('load', () => document.querySelectorAll('.maplibregl-compact-show').forEach(el => el.classList.remove('maplibregl-compact-show')));
 const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.currentTarget.blur(); fn(); });
@@ -1365,6 +1496,13 @@ setMuted(muted); setMul(mulIdx, false); setHint(hintOn, false);
 
 // ---------- пауза и меню ----------
 let paused = false;
+// пока выбираем маршрут, игра стоит, но меню не открываем
+let held = false;
+function setHeld(h) {
+  h = h && alive;
+  if (h && !held) toast('Пауза, пока выбираете маршрут');
+  held = h;
+}
 function openOverlay(id) { $(id).classList.remove('hidden'); }
 function closeOverlay(id) { $(id).classList.add('hidden'); }
 // меню — боковая панель со страницами: главная, рекорды, знаки
@@ -1386,7 +1524,7 @@ function setPaused(p) {
 }
 function syncMenu() {
   $('speedRange').value = MULS[mulIdx]; $('speedVal').textContent = '×' + MULS[mulIdx];
-  $('soundToggle').checked = !muted; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
+  $('soundToggle').checked = !muted; $('voiceToggle').checked = voiceOn; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
   $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
 $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
@@ -1401,6 +1539,7 @@ $('speedRange').addEventListener('input', e => {
 $('speedRange').addEventListener('change', e => { e.target.value = MULS[mulIdx]; });
 $('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
 $('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
+$('voiceToggle').addEventListener('change', e => setVoice(e.target.checked));
 $('menuName').addEventListener('change', e => setNick(e.target.value));
 $('menuName').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); });
 // во весь экран: Android и компьютер — Fullscreen API, iPhone — только с иконки на экране «Домой»
@@ -1977,6 +2116,7 @@ function answerQuiz(i) {
   q.done = true;
   [...$('qOpts').children].forEach((b, j) => {
     b.disabled = true;
+    if (i < 0) return;                    // время вышло: правильный ответ не подсказываем
     if (q.opts[j] === q.n) b.classList.add('right'); else if (j === i) b.classList.add('wrong');
   });
   $('qTitle').textContent = ok ? 'Верно!' : i < 0 ? 'Время вышло' : 'Неверно';
@@ -1988,7 +2128,7 @@ function answerQuiz(i) {
     if (!alive) return;
     if (ok) { quizRight++; score += 2; applySign(q.k); }
     else loseLife(i < 0 ? 'Не успел ответить' : 'Неверный ответ');
-  }, ok ? 700 : 1800);
+  }, ok ? 700 : i < 0 ? 1000 : 1800);
 }
 $('qOpts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answerQuiz(+b.dataset.i); });
 
@@ -2001,7 +2141,7 @@ function frame(now) {
     quiz.left -= real; quizTimer();
     if (quiz.left <= 0) answerQuiz(-1);
   }
-  if (alive && !paused && !quiz && map.getSource('body')) {
+  if (alive && !paused && !quiz && !held && map.getSource('body')) {
     gameTime += dt * 1000;
     const v = speed * MULS[mulIdx] * speedFactor();
     curV = Math.max(v, speed * MULS[mulIdx]);
@@ -2052,6 +2192,9 @@ function start() {
   ['start', 'over'].forEach(closeOverlay); closePanel();
   $('rank').textContent = ''; $('codeNote').textContent = '';
   audioInit(); SFX.start();
+  held = false;
+  if (window.speechSynthesis && voiceOn) try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+  if (nav) { nav.announced = false; navDirty = true; }
   track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx], mode: gameMode });
   if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
 }
