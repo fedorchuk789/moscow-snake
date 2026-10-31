@@ -577,7 +577,7 @@ const norm = d => ((d % 360) + 540) % 360 - 180;
 
 // ---------- настройки ----------
 const START_LEN = 70, GROW = 45, BASE_SPEED = 38, MAX_SPEED = 75;
-const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 14;
+const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 6;   // знаков на карте вокруг змейки: реже — чтобы не шли один за другим
 const TRAFFIC = [['#3fb33f', .45], ['#2a8f2a', .2], ['#f7c21a', .23], ['#e8453c', .12]];
 // ---------- знаки ПДД: каталог (signs/index.json) и их влияние на игру ----------
 let CATALOG = [], BY_GROUP = {};
@@ -921,7 +921,7 @@ function spawnFood() {
   const near = nodesNear(hp, 550);
   let i, tries = 0;
   do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
-  while (tries < 300 && (dist(P[i], hp) < 80 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 60)));
+  while (tries < 300 && (dist(P[i], hp) < 150 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 180)));
   // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
   const sign = gameMode === 'pdd' ? pickQuizSign() : g[Math.floor(Math.random() * g.length)];
