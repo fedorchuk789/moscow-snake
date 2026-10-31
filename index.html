@@ -530,7 +530,7 @@ if (inVK) {
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
       <label class="row" for="voiceToggle"><i class="ri"></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
       <label class="row" for="voiceSel"><i class="ri"></i><span>Голос навигатора</span><select id="voiceSel" aria-label="Голос навигатора">
-        <option value="female">Женский</option><option value="male">Мужской</option><option value="child">Детский</option><option value="robot">Робот</option><option value="cartoon">Мультяшный</option>
+        <option value="female">Женский</option><option value="male">Мужской</option><option value="child">Детский</option><option value="cartoon">Мультяшный</option>
       </select></label>
       <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
@@ -1275,14 +1275,20 @@ function distText(m, spoken) {
   const n = Math.round(km);
   return n + ' ' + plural(n, 'километр', 'километра', 'километров');
 }
-// голоса навигатора: берём русский голос телефона нужного пола, если он есть, и меняем высоту и темп.
-// Детский и мультяшный — это высокий голос: отдельных детских голосов в телефонах нет
+// голоса навигатора: берём русский голос телефона нужного пола, если он есть, и сильно меняем высоту и темп.
+// Отдельных детских голосов в телефонах нет, а некоторые телефоны высоту не меняют —
+// поэтому у каждого голоса ещё и своя манера речи
+const rnd = a => a[Math.floor(Math.random() * a.length)];
 const VOICES = {
-  female: { pitch: 1.05, rate: 1.05, want: /irina|svetlana|milena|alena|алён|ирин|светлан|female|google/i },
-  male: { pitch: .8, rate: 1, want: /pavel|dmitr|yuri|maxim|павел|дмитр|юри|максим|male/i, low: .55 },
-  child: { pitch: 1.9, rate: 1.12, want: /irina|svetlana|milena|alena|алён|ирин|female|google/i },
-  robot: { pitch: .1, rate: .85 },
-  cartoon: { pitch: 2, rate: 1.45 },
+  female: { pitch: 1.1, rate: 1.05, want: /irina|svetlana|milena|alena|алён|ирин|светлан|female|google/i },
+  male: { pitch: .75, rate: .92, want: /pavel|dmitr|yuri|maxim|павел|дмитр|юри|максим|male/i, low: .45,
+    style: t => t.replace('Маршрут построен', 'Так. Маршрут готов') },
+  child: { pitch: 1.75, rate: 1.2, want: /irina|svetlana|milena|alena|алён|ирин|female|google/i,
+    style: t => rnd(['Ура! ', 'Смотри! ', 'Эй! ', '']) + t.replace('поверните', 'поворачиваем').replace('Двигайтесь прямо', 'Едем прямо')
+      .replace('До конца маршрута осталось', 'Нам ещё ехать').replace('Вы приехали', 'Приехали! Ура-ура') + '!' },
+  cartoon: { pitch: 2, rate: 1.6,
+    style: t => rnd(['Би-би! ', 'Вжух! ', 'Опа-опа! ', 'Тыц! ']) + t.replace('поверните', 'крутим руль').replace('Двигайтесь прямо', 'Жмём прямо')
+      .replace('Финиш через', 'Финиш уже через') + rnd(['. Поехали!', '. Вжжжж!', '!']) },
 };
 let voiceKind = 'female';
 try { if (VOICES[localStorage.getItem('routeSnakeVoiceKind')]) voiceKind = localStorage.getItem('routeSnakeVoiceKind'); } catch (e) {}
@@ -1294,6 +1300,7 @@ function pickVoice(kind) {
 }
 function say(text, show = true, force = false) {
   if (!voiceOn && !force) return;
+  if (VOICES[voiceKind].style) text = VOICES[voiceKind].style(text);
   if (show) toast(text, 2600);
   if (muted || !window.speechSynthesis) return;
   try {
