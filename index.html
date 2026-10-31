@@ -180,6 +180,26 @@ if (inVK) {
   .card button.google svg { width: 20px; height: 20px; flex: none; }
   .card button.link { background: none; font-size: 14px; font-weight: 500; color: var(--muted); padding: 4px; }
   .card .anonNote { font-size: 12px; color: var(--muted); }
+  /* режим «ПДД»: выбор режима и вопрос по съеденному знаку */
+  .modepick { margin-top: 16px; }
+  .card .modepick .tab { font-size: 15px; padding: 9px; }
+  .card .modenote { margin-top: 8px; font-size: 13px; color: var(--muted); min-height: 36px; }
+  .row.mode .modepick { flex: 1; margin: 0; }
+  .quiz { background: rgba(20,24,30,.3); }
+  .quiz .card { max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
+  .qhead { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .qbar { height: 6px; border-radius: 3px; background: #ececec; overflow: hidden; }
+  .qbar i { display: block; height: 100%; background: var(--green); transform-origin: left; }
+  .qbar i.low { background: #e5484d; }
+  .qsign { height: 104px; display: grid; place-items: center; }
+  .qsign img { max-height: 104px; max-width: 170px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+  .card .qtitle { font-weight: 700; color: var(--ink); font-size: 17px; }
+  .qopts { display: flex; flex-direction: column; gap: 8px; }
+  .card .qopts button { display: flex; gap: 10px; align-items: baseline; text-align: left; font-size: 15px; font-weight: 600; line-height: 1.3; padding: 12px 14px; }
+  .card .qopts button b { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .card .qopts button.right { background: #d9f2df; color: #14632b; }
+  .card .qopts button.wrong { background: #fde2e1; color: #a1201b; }
+  @media (hover: none) { .card .qopts button b { display: none; } }
   /* меню в стиле 2ГИС: серая панель, белые группы строк, серые иконки, шевроны */
   .panel { position: fixed; inset: 0; z-index: 25; display: flex; background: rgba(20,24,30,.35); }
   .sheet { background: #f0f0f0; width: 380px; max-width: 100%; height: 100%; overflow-y: auto; box-sizing: border-box; overscroll-behavior: contain;
@@ -331,6 +351,9 @@ if (inVK) {
   [data-theme="dark"] .tabs, [data-theme="dark"] .page .tabs { background: #18191c; }
   [data-theme="dark"] .tab.on, [data-theme="dark"] .page .tab.on { background: #34353b; color: var(--ink); }
   [data-theme="dark"] .card .tab, [data-theme="dark"] .page .tab { color: #a9aab0; }
+  [data-theme="dark"] .qbar { background: #34353b; }
+  [data-theme="dark"] .card .qopts button.right { background: #1d3b26; color: #8fe0a5; }
+  [data-theme="dark"] .card .qopts button.wrong { background: #4a1f1d; color: #ffb4ab; }
   [data-theme="dark"] .sheet { background: #141518; }
   [data-theme="dark"] .grp { background: var(--card); }
   [data-theme="dark"] .row, [data-theme="dark"] .phead h2, [data-theme="dark"] .sgroup { color: var(--ink); }
@@ -390,6 +413,7 @@ if (inVK) {
     <button class="btn" id="slower"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
   </div>
   <button class="btn on" id="hintBtn" title="Подсказка поворота (H)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/></svg></button>
+  <button class="btn" id="modeBtn" title="Режим ПДД: вопрос за каждый знак (Q)" aria-label="Режим ПДД"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3L21.5 19.5H2.5z"/><path d="M10 11a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3"/><circle cx="12" cy="16.6" r=".4"/></svg></button>
   <button class="btn" id="themeBtn" title="Светлая или тёмная тема (T)" aria-label="Сменить тему"><svg class="ico sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
 </div>
 <div id="turn"></div>
@@ -409,7 +433,9 @@ if (inVK) {
     <div class="tip"><div class="pico"><img src="signs/7.1.svg" alt="" style="width:22px;height:22px"></div>3 жизни. Мигают две стрелки — дорога упирается в перекрёсток: выбери поворот, иначе минус жизнь</div>
     <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
   </div>
-  <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук</div>
+  <div class="tabs modepick" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div>
+  <p class="modenote" id="modeNote"></p>
+  <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук · Q режим ПДД</div>
   <div class="startAuth" id="startAuth"></div>
 </div></div>
 <div class="overlay hidden" id="over"><div class="card">
@@ -431,6 +457,13 @@ if (inVK) {
   <button id="again">Ещё раз</button>
   <div class="overBtns"><button class="ghost" id="overMenu">Меню</button><button class="ghost" id="overRecords">Рекорды</button></div>
 </div></div>
+<div class="overlay quiz hidden" id="quiz"><div class="card">
+  <div class="qhead"><span id="qNum"></span><span id="qTime"></span></div>
+  <div class="qbar"><i id="qBar"></i></div>
+  <div class="qsign"><img id="qImg" alt="Дорожный знак"></div>
+  <p class="qtitle" id="qTitle">Что означает этот знак?</p>
+  <div class="qopts" id="qOpts"></div>
+</div></div>
 <div class="panel hidden" id="panel">
 <aside class="sheet" aria-label="Меню игры">
   <section class="page" id="menu">
@@ -441,6 +474,9 @@ if (inVK) {
     <div class="grp">
       <button class="row" id="resumeRow"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></svg></i><span>Продолжить</span><small class="kbd">Esc</small></button>
       <button class="row" id="restart"><i class="ri"></i><span>Начать заново</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="grp">
+      <div class="row mode"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3L21.5 19.5H2.5z"/><path d="M10 11a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3"/><circle cx="12" cy="16.6" r=".4"/></svg></i><div class="tabs modepick" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div></div>
     </div>
     <div class="grp">
       <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span><b id="speedVal">×1</b></div>
@@ -887,7 +923,7 @@ function spawnFood() {
   while (tries < 300 && (dist(P[i], hp) < 80 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 60)));
   // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
-  const sign = g[Math.floor(Math.random() * g.length)];
+  const sign = gameMode === 'pdd' ? pickQuizSign() : g[Math.floor(Math.random() * g.length)];
   const el = document.createElement('div');
   el.className = 'sign'; el.title = sign.k + ' ' + sign.n;
   el.innerHTML = `<img src="signs/${sign.k}.svg" alt="${esc(sign.n)}" draggable="false">`;
@@ -900,6 +936,7 @@ function checkFood(hp) {
     if (d < EAT) {
       f.m.remove(); foods.splice(j, 1);
       eaten++; speed = Math.min(MAX_SPEED, speed + 1.2); addLiters(1);
+      if (gameMode === 'pdd') { askQuiz(f.k); spawnFood(); return; }
       applySign(f.k);
       spawnFood();
     } else if (d > 1000) { f.m.remove(); foods.splice(j, 1); spawnFood(); }
@@ -1200,7 +1237,7 @@ function setQueued(q, target = -1) {
 }
 function steer(k) {
   audioInit();
-  if (!alive || paused) return;
+  if (!alive || paused || quiz) return;
   if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
   setQueued(k === 'S' ? null : k, askShown ? askTarget : -1);
   SFX.queue();
@@ -1215,6 +1252,12 @@ const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: '
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;           // печатаем адрес — не рулим
   if (paused && e.code !== 'Escape' && e.code !== 'KeyP') return;
+  if (quiz) {                                         // вопрос по знаку: отвечаем цифрами 1–4
+    const d = e.code.match(/^(?:Digit|Numpad)([1-4])$/);
+    if (d) answerQuiz(+d[1] - 1);
+    if (e.code !== 'Escape' && e.code !== 'KeyP') return;
+  }
+  if (e.code === 'KeyQ') switchMode(gameMode === 'pdd' ? 'classic' : 'pdd');
   if (KEYS[e.code]) { e.preventDefault(); if (!e.repeat) steer(KEYS[e.code]); }
   if (e.code === 'KeyG') toggleGraph();
   if (e.code === 'KeyH') setHint(!hintOn, true);
@@ -1336,6 +1379,7 @@ $('panel').addEventListener('click', e => { if (e.target === $('panel')) { close
 function setPaused(p) {
   if (!alive) p = false;
   paused = p;
+  if (quiz) $('quiz').classList.toggle('hidden', p);   // на паузе вопрос прячем, таймер стоит
   if (pad && AC) pad.g.gain.setTargetAtTime(p || !alive ? 0 : .035, AC.currentTime, .2);
   if (p) { syncMenu(); showPage('menu'); track('pause'); } else closePanel();
 }
@@ -1638,8 +1682,8 @@ async function showRecords() {
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-  recTab = t.dataset.tab; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t)); showRecords();
+document.querySelectorAll('.tab[data-tab]').forEach(t => t.onclick = () => {
+  recTab = t.dataset.tab; document.querySelectorAll('.tab[data-tab]').forEach(x => x.classList.toggle('on', x === t)); showRecords();
 });
 $('menuRecords').onclick = showRecords;
 $('overRecords').onclick = showRecords;
@@ -1841,11 +1885,105 @@ function finishRun() {
   $('nameBox').classList.toggle('hidden', !!nick);
 }
 
+// ---------- режим «ПДД»: съел знак — выбери его название из четырёх за 15 секунд ----------
+// верно — эффект знака и +2 очка, неверно или не успел — минус жизнь; в одном заезде названия знаков не повторяются
+const QUIZ_MS = 15000;
+const MODE_NOTE = {
+  classic: 'Знаки сразу дают очки и свой эффект',
+  pdd: 'Съел знак — выбери его название за 15 секунд. Верно: +2 очка и эффект знака, ошибка — минус жизнь',
+};
+let gameMode = 'classic', quiz = null, quizAsked = 0, quizRight = 0;
+const askedNames = new Set();
+try { if (localStorage.getItem('routeSnakeMode') === 'pdd') gameMode = 'pdd'; } catch (e) {}
+function setMode(m) {
+  gameMode = m;
+  try { localStorage.setItem('routeSnakeMode', m); } catch (e) {}
+  document.querySelectorAll('.modepick .tab').forEach(t => t.classList.toggle('on', t.dataset.mode === m));
+  $('modeNote').textContent = MODE_NOTE[m];
+  $('modeBtn').classList.toggle('on', m === 'pdd');
+}
+function switchMode(m) {
+  if (m === gameMode) return;
+  setMode(m);
+  track('mode', { mode: m });
+  if (!alive) return;
+  toast(m === 'pdd' ? 'Режим ПДД: за каждый знак — вопрос' : 'Классический режим');
+  // знаки на карте ставим заново, чтобы в режиме ПДД они не повторялись
+  foods.forEach(f => f.m.remove()); foods = [];
+  while (foods.length < FOOD_COUNT) spawnFood();
+}
+document.querySelectorAll('.modepick').forEach(el => el.addEventListener('click', e => {
+  const t = e.target.closest('[data-mode]');
+  if (t) switchMode(t.dataset.mode);
+}));
+$('modeBtn').addEventListener('click', e => { e.currentTarget.blur(); switchMode(gameMode === 'pdd' ? 'classic' : 'pdd'); });
+setMode(gameMode);
+// знак, название которого ещё не спрашивали в этом заезде и которого нет на карте
+function pickQuizSign() {
+  const taken = new Set(askedNames);
+  for (const f of foods) taken.add(signName(f.k));
+  const groups = Object.keys(BY_GROUP).sort(() => Math.random() - .5);
+  for (const g of groups) {
+    const free = BY_GROUP[g].filter(s => !taken.has(s.n));
+    if (free.length) return free[Math.floor(Math.random() * free.length)];
+  }
+  askedNames.clear();                     // все названия уже были — начинаем круг заново
+  return CATALOG[Math.floor(Math.random() * CATALOG.length)];
+}
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function askQuiz(k) {
+  const n = signName(k), g = k.split('.')[0];
+  askedNames.add(n); quizAsked++;
+  // неверные варианты сперва из той же группы, чтобы ответ не угадывался по форме знака
+  const names = list => [...new Set(list.map(s => s.n))].filter(x => x !== n);
+  const same = shuffle(names(BY_GROUP[g] || [])), other = shuffle(names(CATALOG)).filter(x => !same.includes(x));
+  const opts = shuffle([n, ...same.slice(0, 3), ...other].slice(0, 4));
+  quiz = { k, n, opts, left: QUIZ_MS, done: false };
+  $('qImg').src = `signs/${k}.svg`;
+  $('qNum').textContent = `Вопрос ${quizAsked}`;
+  $('qTitle').textContent = 'Что означает этот знак?';
+  $('qOpts').innerHTML = opts.map((o, i) => `<button class="ghost" data-i="${i}"><b>${i + 1}</b><span>${esc(o)}</span></button>`).join('');
+  quizTimer();
+  openOverlay('quiz');
+  SFX.queue();
+}
+function quizTimer() {
+  const left = Math.max(0, quiz.left);
+  $('qTime').textContent = Math.ceil(left / 1000) + ' с';
+  $('qBar').style.transform = `scaleX(${left / QUIZ_MS})`;
+  $('qBar').classList.toggle('low', left < 5000);
+}
+function answerQuiz(i) {
+  if (!quiz || quiz.done) return;
+  const q = quiz, ok = i >= 0 && q.opts[i] === q.n;
+  q.done = true;
+  [...$('qOpts').children].forEach((b, j) => {
+    b.disabled = true;
+    if (q.opts[j] === q.n) b.classList.add('right'); else if (j === i) b.classList.add('wrong');
+  });
+  $('qTitle').textContent = ok ? 'Верно!' : i < 0 ? 'Время вышло' : 'Неверно';
+  track('quiz_answer', { sign: q.k, ok: ok ? 1 : 0, timeout: i < 0 ? 1 : 0 });
+  // если ошибся, правильный ответ показываем подольше
+  setTimeout(() => {
+    if (quiz !== q) return;               // за это время начали новый заезд
+    quiz = null; closeOverlay('quiz');
+    if (!alive) return;
+    if (ok) { quizRight++; score += 2; applySign(q.k); }
+    else loseLife(i < 0 ? 'Не успел ответить' : 'Неверный ответ');
+  }, ok ? 700 : 1800);
+}
+$('qOpts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answerQuiz(+b.dataset.i); });
+
 // ---------- цикл ----------
 let last = 0;
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  if (alive && !paused && map.getSource('body')) {
+  // таймер вопроса идёт по настоящему времени: на слабом телефоне кадров меньше, но 15 секунд остаются 15
+  const real = Math.min(500, now - last), dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (quiz && !quiz.done && !paused) {
+    quiz.left -= real; quizTimer();
+    if (quiz.left <= 0) answerQuiz(-1);
+  }
+  if (alive && !paused && !quiz && map.getSource('body')) {
     gameTime += dt * 1000;
     const v = speed * MULS[mulIdx] * speedFactor();
     curV = Math.max(v, speed * MULS[mulIdx]);
@@ -1859,7 +1997,7 @@ function frame(now) {
       const p = headPos();
       bodyGeo = buildBody(p);
       checkFood(p);
-      if (!alive) break;
+      if (!alive || quiz) break;
       // въехал в свой хвост — минус жизнь и 2 секунды щита, чтобы выехать
       if (hitSelf(p)) {
         loseLife('Врезался в хвост');
@@ -1890,12 +2028,13 @@ function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   if (!runFinished) finishRun();          // ушли со страницы аварии, не выбрав запаску
   reset(); alive = true; paused = false;
+  quiz = null; closeOverlay('quiz'); askedNames.clear(); quizAsked = quizRight = 0;
   runLiters = 0; kmPaid = 0; odo0 = odo; revivedThisRun = false; runFinished = true;
   $('earned').textContent = ''; $('reviveBox').classList.add('hidden');
   ['start', 'over'].forEach(closeOverlay); closePanel();
   $('rank').textContent = ''; $('codeNote').textContent = '';
   audioInit(); SFX.start();
-  track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx] });
+  track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx], mode: gameMode });
   if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
 }
 function gameOver(reason = 'Авария!') {
@@ -1907,7 +2046,7 @@ function gameOver(reason = 'Авария!') {
   if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
   if (map.getSource('preview')) map.getSource('preview').setData(empty());
   fx = []; renderFx();
-  $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м.`;
+  $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м.` + (quizAsked ? ` Ответов на вопросы: ${quizRight} из ${quizAsked}.` : '');
   $('earned').textContent = runLiters ? `Заработано: +${runLiters} л · в баке ${garage.liters} л` : '';
   runFinished = false;
   if (canRevive()) { showRevive(); $('nameBox').classList.add('hidden'); } else finishRun();
