@@ -149,6 +149,26 @@ if (inVK) {
           font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .chip img { height: 22px; width: auto; }
   .head.shield svg { animation: blink .35s infinite alternate; }
+  /* укус своего хвоста: голова «жуёт», вокруг крошки и надпись */
+  .head.chomp svg { animation: chomp .11s ease-in-out 6 alternate; }
+  @keyframes chomp { from { transform: scale(1.25, .7); } to { transform: scale(.8, 1.2); } }
+  .fxlayer { position: fixed; inset: 0; pointer-events: none; z-index: 11; overflow: hidden; }
+  .crumb { position: absolute; width: 13px; height: 13px; border-radius: 50%; margin: -6px 0 0 -6px; border: 2px solid #fff; box-sizing: border-box; animation: crumb .7s ease-out forwards; }
+  @keyframes crumb { to { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; } }
+  .bite { position: absolute; transform: translate(-50%, -150%); font: 900 22px/1 system-ui, sans-serif; color: #e8453c; -webkit-text-stroke: 1.5px #fff;
+          paint-order: stroke; animation: bite .9s ease-out forwards; white-space: nowrap; }
+  @keyframes bite { 0% { transform: translate(-50%, -100%) scale(.4); } 25% { transform: translate(-50%, -160%) scale(1.25); } 100% { transform: translate(-50%, -260%) scale(1); opacity: 0; } }
+  /* шарики на финише — в цветах арки */
+  .balloon { position: absolute; margin-left: -18px; animation: rise var(--t) cubic-bezier(.3, .1, .6, 1) var(--d) forwards; opacity: 0; }
+  .balloon svg { display: block; animation: sway 1.1s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(0) scale(.5); } 10% { opacity: 1; transform: translateY(-20px) scale(1); } 100% { opacity: 1; transform: translateY(-110vh); } }
+  @keyframes sway { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+  /* жизни на карте: знак 7.1 с пульсирующим свечением */
+  .sign.life img { animation: lifeGlow .8s ease-in-out infinite alternate; }
+  @keyframes lifeGlow { from { filter: drop-shadow(0 0 0 rgba(232,69,60,0)); } to { filter: drop-shadow(0 0 7px rgba(232,69,60,.95)); transform: scale(1.1); } }
+  @media (prefers-reduced-motion: reduce) { .head.chomp svg, .balloon svg, .sign.life img { animation: none; } }
+  .row select { font: inherit; font-size: 15px; padding: 6px 8px; border: 1px solid #d0d0d0; border-radius: 8px; background: var(--card); color: var(--ink); }
+  .rlist .len { font-weight: 700; font-variant-numeric: tabular-nums; }
   @keyframes blink { to { opacity: .35; } }
   @media (prefers-reduced-motion: reduce) { .head.shield svg { animation: none; opacity: .6; } }
   /* меню паузы и рекорды */
@@ -444,6 +464,7 @@ if (inVK) {
   <div class="nrest"><b id="nrest"></b><small>до финиша</small></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="fxlayer" id="fxlayer"></div>
 <div class="pad">
   <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button data-k="S" title="Прямо"><svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>
@@ -508,6 +529,9 @@ if (inVK) {
       <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
       <label class="row" for="voiceToggle"><i class="ri"></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
+      <label class="row" for="voiceSel"><i class="ri"></i><span>Голос навигатора</span><select id="voiceSel" aria-label="Голос навигатора">
+        <option value="female">Женский</option><option value="male">Мужской</option><option value="child">Детский</option><option value="robot">Робот</option><option value="cartoon">Мультяшный</option>
+      </select></label>
       <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
     <div class="grp">
@@ -633,7 +657,7 @@ const EFFECTS = [
   [/^(1\.22|1\.23|5\.19\.\d)$/, { speed: [.6, 2500], text: 'пешеходы, медленнее' }],
   [/^5\.21$/, { speed: [.5, 3000], text: 'жилая зона, медленнее' }],
   [/^(1\.17|5\.20)$/, { speed: [.5, 1500], text: 'лежачий полицейский' }],
-  [/^3\.1$/, { brick: true, pts: 0, text: 'змейка краснеет, третий такой знак — авария' }],
+  [/^3\.1$/, { brick: true, pts: 0, shrink: 40, text: 'хвост короче на 40 м, змейка краснеет, третий такой знак — авария' }],
   [/^3\.2$/, { pts: -2, text: 'штраф −2 очка' }],
   [/^7\.1[23]$/, { pts: -1, text: 'штраф −1 очко' }],
   [/^4\.1\.2$/, { force: 'R', text: 'змейка сама свернёт направо на ближайшем перекрёстке (↑ отменяет)' }],
@@ -649,6 +673,7 @@ function effectOf(k) {
 let gameTime = 0, fx = [], bricks = 0;  // fx: { kind, until, f?, k }; bricks: съедено знаков «Въезд запрещён»
 const BRICKS_MAX = 3;
 const DEFAULT_EFFECT = '+1 очко, змейка длиннее на 45 м';
+const SHRINK_SIGNS = ['1.25', '7.5', '3.1'];   // «Дорожные работы», «Мойка», «Въезд запрещён»
 const fxActive = kind => fx.some(e => e.kind === kind && e.until > gameTime);
 function speedFactor() {
   if (fxActive('stop')) return 0;
@@ -797,6 +822,7 @@ function reset() {
   (foods || []).forEach(f => f.m.remove());
   foods = [];
   for (let i = 0; i < FOOD_COUNT; i++) spawnFood();
+  if (typeof resetLives === 'function') resetLives();
   headMarker.setLngLat(toLL(...P[s])).addTo(map);
   setQueued(null);
 }
@@ -949,7 +975,11 @@ function spawnFood() {
   while (tries < 300 && (dist(P[i], hp) < 150 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 180)));
   // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
-  const sign = gameMode === 'pdd' ? pickQuizSign() : g[Math.floor(Math.random() * g.length)];
+  // каждый пятый знак — из тех, что укорачивают хвост, иначе среди 358 знаков они почти не попадаются
+  const shrinkers = CATALOG.filter(x => SHRINK_SIGNS.includes(x.k));
+  const sign = gameMode === 'pdd' ? pickQuizSign()
+    : shrinkers.length && Math.random() < .2 ? shrinkers[Math.floor(Math.random() * shrinkers.length)]
+    : g[Math.floor(Math.random() * g.length)];
   const el = document.createElement('div');
   el.className = 'sign'; el.title = sign.k + ' ' + sign.n;
   el.innerHTML = `<img src="signs/${sign.k}.svg" alt="${esc(sign.n)}" draggable="false">`;
@@ -1022,6 +1052,8 @@ function music() {
   }
 }
 const SFX = {
+  // «ам-ням»: три хрустящих укуса
+  bite() { [0, .12, .24].forEach((d, i) => { tone(420 - i * 70, .07, { type: 'square', vol: .16, to: 180, delay: d }); tone(1800, .03, { type: 'sawtooth', vol: .05, delay: d + .02 }); }); },
   start() { [523, 659, 784].forEach((fr, i) => tone(fr, .3, { type: 'triangle', vol: .15, delay: i * .1 })); },
   queue() { tone(1046, .08, { type: 'sine', vol: .12 }); },
   turn() { tone(660, .12, { type: 'triangle', vol: .15 }); tone(990, .16, { type: 'triangle', vol: .13, delay: .06 }); },
@@ -1134,6 +1166,29 @@ function archEl() {
     <text x="48" y="28" font-size="12" font-weight="800" fill="#fff" text-anchor="middle" font-family="system-ui, sans-serif" letter-spacing="1.5">ФИНИШ</text></svg>`;
   return el;
 }
+// приехали: змейка на полторы секунды замирает, из арки вылетают шарики
+let freezeUntil = 0;
+function celebrate(ll) {
+  freezeUntil = performance.now() + 1500;
+  const pt = map.project(ll), layer = $('fxlayer'), cols = ['#7b5cff', '#5b3fd6', '#9b85ff', '#7b5cff', '#5b3fd6', '#9b85ff', '#7b5cff', '#5b3fd6'];
+  cols.forEach((c, i) => {
+    const b = document.createElement('div'), id = 'bal' + archN++;
+    b.className = 'balloon';
+    b.style.left = (pt.x + (i - 3.5) * 22 + (Math.random() * 16 - 8)) + 'px';
+    b.style.top = (pt.y - 60) + 'px';
+    b.style.setProperty('--t', (2.4 + Math.random() * 1.2) + 's');
+    b.style.setProperty('--d', (i * .08) + 's');
+    b.innerHTML = `<svg width="36" height="64" viewBox="0 0 36 64"><defs><pattern id="${id}" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#fff"/><rect width="3" height="3" fill="#1a1a1a"/><rect x="3" y="3" width="3" height="3" fill="#1a1a1a"/></pattern>
+      <clipPath id="c${id}"><ellipse cx="18" cy="18" rx="16" ry="18"/></clipPath></defs>
+      <path d="M18 36c-2 8 3 12 0 18s2 8 0 10" stroke="#888" stroke-width="1.2" fill="none"/>
+      <path d="M15 36h6l-3 4z" fill="${c}"/>
+      <ellipse cx="18" cy="18" rx="16" ry="18" fill="${c}"/>
+      <rect x="0" y="13" width="36" height="6" fill="url(#${id})" clip-path="url(#c${id})"/>
+      <ellipse cx="12" cy="10" rx="4" ry="6" fill="#fff" opacity=".35"/></svg>`;
+    layer.appendChild(b);
+    setTimeout(() => b.remove(), 4200);
+  });
+}
 function setNav(key) {
   if (nav) { nav.marker.remove(); nav = null; }
   if (map.getSource('nav')) map.getSource('nav').setData(empty());
@@ -1171,6 +1226,7 @@ function updateNav(hp) {
     track('route_arrive', { place: nav.key });
     score += 5; addLiters(10); SFX.arrive(); toast(ARRIVED[nav.key] + '! +5 очков');
     say('Вы приехали', false);
+    celebrate(NODES[nav.node]);
     const m = nav.marker; m.getElement().classList.add('done');
     nav.marker = { remove() {} }; setTimeout(() => m.remove(), 2200);
     setNav(null); return;
@@ -1219,17 +1275,42 @@ function distText(m, spoken) {
   const n = Math.round(km);
   return n + ' ' + plural(n, 'километр', 'километра', 'километров');
 }
-let ruVoice;
-function say(text, show = true) {
-  if (!voiceOn) return;
+// голоса навигатора: берём русский голос телефона нужного пола, если он есть, и меняем высоту и темп.
+// Детский и мультяшный — это высокий голос: отдельных детских голосов в телефонах нет
+const VOICES = {
+  female: { pitch: 1.05, rate: 1.05, want: /irina|svetlana|milena|alena|алён|ирин|светлан|female|google/i },
+  male: { pitch: .8, rate: 1, want: /pavel|dmitr|yuri|maxim|павел|дмитр|юри|максим|male/i, low: .55 },
+  child: { pitch: 1.9, rate: 1.12, want: /irina|svetlana|milena|alena|алён|ирин|female|google/i },
+  robot: { pitch: .1, rate: .85 },
+  cartoon: { pitch: 2, rate: 1.45 },
+};
+let voiceKind = 'female';
+try { if (VOICES[localStorage.getItem('routeSnakeVoiceKind')]) voiceKind = localStorage.getItem('routeSnakeVoiceKind'); } catch (e) {}
+function pickVoice(kind) {
+  const ru = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => /^ru/i.test(v.lang));
+  const want = VOICES[kind].want;
+  const v = want && ru.find(x => want.test(x.name));
+  return { voice: v || ru[0] || null, exact: !!v };
+}
+function say(text, show = true, force = false) {
+  if (!voiceOn && !force) return;
   if (show) toast(text, 2600);
   if (muted || !window.speechSynthesis) return;
   try {
-    ruVoice ||= speechSynthesis.getVoices().find(v => /^ru/i.test(v.lang));
+    const cfg = VOICES[voiceKind], { voice, exact } = pickVoice(voiceKind);
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ru-RU'; u.rate = 1.05; if (ruVoice) u.voice = ruVoice;
+    u.lang = 'ru-RU'; u.rate = cfg.rate;
+    // мужского голоса в телефоне нет — опускаем высоту обычного
+    u.pitch = voiceKind === 'male' && !exact ? cfg.low : cfg.pitch;
+    if (voice) u.voice = voice;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) {}
+}
+function setVoiceKind(k) {
+  voiceKind = k;
+  try { localStorage.setItem('routeSnakeVoiceKind', k); } catch (e) {}
+  audioInit();
+  say('Через 300 метров поверните направо', false, true);   // образец голоса
 }
 function navTalk(rest, turnIn) {
   if (!voiceOn || !nav.path.length) return;
@@ -1524,7 +1605,7 @@ function setPaused(p) {
 }
 function syncMenu() {
   $('speedRange').value = MULS[mulIdx]; $('speedVal').textContent = '×' + MULS[mulIdx];
-  $('soundToggle').checked = !muted; $('voiceToggle').checked = voiceOn; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
+  $('soundToggle').checked = !muted; $('voiceToggle').checked = voiceOn; $('voiceSel').value = voiceKind; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
   $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
 $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
@@ -1540,6 +1621,7 @@ $('speedRange').addEventListener('change', e => { e.target.value = MULS[mulIdx];
 $('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
 $('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
 $('voiceToggle').addEventListener('change', e => setVoice(e.target.checked));
+$('voiceSel').addEventListener('change', e => setVoiceKind(e.target.value));
 $('menuName').addEventListener('change', e => setNick(e.target.value));
 $('menuName').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') e.target.blur(); });
 // во весь экран: Android и компьютер — Fullscreen API, iPhone — только с иконки на экране «Домой»
@@ -1645,13 +1727,13 @@ let myRowId = null;    // строка игрока в общей таблице
 const REMOTE = {
   async load(mode) {
     await initFirebase();
-    const snap = await db.collection(SCORES[mode]).orderBy('score', 'desc').limit(50).get();
+    const snap = await db.collection(SCORES[mode]).orderBy('len', 'desc').limit(50).get();
     return snap.docs.map(d => ({ ...d.data(), id: d.id }));
   },
   async mine(mode) {
     await initFirebase();
     if (fbUser) {
-      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('score', 'desc').limit(100).get();
+      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('len', 'desc').limit(100).get();
       return snap.docs.map(d => ({ ...d.data(), id: d.id })).filter(r => modeOf(r) === mode);
     }
     if (playerCode) {
@@ -1666,7 +1748,7 @@ const REMOTE = {
     if (fbUser) {
       await db.collection('users').doc(fbUser.uid).collection('games').add({ ...data, mode });
       const ref = table.doc(fbUser.uid), cur = await ref.get();
-      if (!cur.exists || data.score >= cur.data().score) await ref.set({ ...data, kind: 'google' });   // в таблице — лучший результат
+      if (!cur.exists || data.len >= cur.data().len) await ref.set({ ...data, kind: 'google' });   // в таблице — самая длинная змейка
       myRowId = fbUser.uid;
       return;
     }
@@ -1679,7 +1761,7 @@ const REMOTE = {
     const batch = db.batch();
     batch.set(ref, { code: playerCode, games, best, name: data.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     // строку общей таблицы правила пускают только вместе с записью, подтверждённой кодом
-    if (!rowCur.exists || data.score >= rowCur.data().score) batch.set(row, { ...data, kind: 'code' });
+    if (!rowCur.exists || data.len >= rowCur.data().len) batch.set(row, { ...data, kind: 'code' });
     await batch.commit();
     myRowId = 'a_' + h;
   },
@@ -1690,9 +1772,9 @@ const REMOTE = {
       if (cur.exists) await ref.set({ ...cur.data(), name: name.slice(0, 24) });
     }
   },
-  async place(score, mode) {
-    // count() в compat-версии SDK нет: берём документы с большим счётом, таблица небольшая
-    const snap = await db.collection(SCORES[mode]).where('score', '>', score).limit(1000).get();
+  async place(len, mode) {
+    // count() в compat-версии SDK нет: берём документы с большей длиной, таблица небольшая
+    const snap = await db.collection(SCORES[mode]).where('len', '>', len).limit(1000).get();
     return snap.size + 1;
   },
   async codeExists(c) {
@@ -1791,7 +1873,8 @@ function setNick(v) {
 }
 function localScores() { try { return JSON.parse(localStorage.getItem('routeSnakeScores')) || []; } catch (e) { return []; } }
 function saveLocalScores(list) { try { localStorage.setItem('routeSnakeScores', JSON.stringify(list.slice(0, 100))); } catch (e) {} }
-const byScore = (a, b) => b.score - a.score || b.len - a.len;
+// рекорды считаются по длине змейки
+const byScore = (a, b) => b.len - a.len || b.score - a.score;
 async function submitScore() {
   const mode = runMode();
   const rec = { name: nick || 'Без ника', score, eaten, len: Math.round(bodyLen), speed: MULS[mulIdx], revived: revivedThisRun, date: new Date().toISOString().slice(0, 10), id: Date.now() + '' + Math.random().toString(36).slice(2, 6),
@@ -1803,13 +1886,14 @@ async function submitScore() {
     rec.synced = !!fbUser;
     REMOTE.submit(rec).then(() => {
       if (!fbUser) $('codeNote').innerHTML = `Рекорд сохранён по коду <b>${prettyCode(playerCode)}</b>. Код есть в меню, с ним рекорды откроются на любом устройстве.`;
-      return REMOTE.place(score, mode);
+      return REMOTE.place(rec.len, mode);
     }).then(p => { $('rank').textContent = `${p}-е место в общей таблице${where}`; }).catch(() => {});
   }
   saveLocalScores([...localScores(), rec].sort(byScore));
   return rec;
 }
 let lastRecId = null, recTab = 'all', recMode = null;
+const fmtLen = m => m >= 1000 ? (m / 1000).toFixed(2).replace('.', ',') + ' км' : m + ' м';
 const speedLabel = s => '×' + (+s || 1).toString().replace('.', ',');
 async function showRecords() {
   showPage('records', $('panel').classList.contains('hidden') ? null : 'menu');
@@ -1822,7 +1906,7 @@ async function showRecords() {
     const timeout = new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 8000));
     list = await Promise.race([recTab === 'all' ? REMOTE.load(recMode) : REMOTE.mine(recMode), timeout]);
     const of = recMode === 'pdd' ? ' в режиме ПДД' : ' в классическом режиме';
-    note = recTab === 'all' ? `Общая таблица: лучший результат каждого игрока${of}.` : fbUser ? `Ваши игры${of} на всех устройствах с этим Google-аккаунтом.` : `Ваши игры${of} по коду игрока.`;
+    note = recTab === 'all' ? `Общая таблица: самая длинная змейка каждого игрока${of}.` : fbUser ? `Ваши игры${of} на всех устройствах с этим Google-аккаунтом.` : `Ваши игры${of} по коду игрока.`;
   } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
   if (!list) {
     list = localScores().filter(r => modeOf(r) === recMode);
@@ -1831,7 +1915,7 @@ async function showRecords() {
   list = list.sort(byScore).slice(0, 30);
   const me = r => r.id === lastRecId || (recTab === 'all' && r.id && r.id === myRowId);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}<small>${r.asked ? `ответов ${r.right} из ${r.asked}` : r.eaten + ' зн.'} · ${r.len} м · ${speedLabel(r.speed)} · ${r.date.slice(8, 10)}.${r.date.slice(5, 7)}${r.revived ? '<span class="rev">с запаской</span>' : ''}</small></span><span class="pts">${r.score}</span></li>`).join('')
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}</span><span class="len">${fmtLen(r.len)}</span></li>`).join('')
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2039,6 +2123,60 @@ function finishRun() {
   $('nameBox').classList.toggle('hidden', !!nick);
 }
 
+// ---------- укус своего хвоста: голова жуёт, разлетаются крошки цвета змейки ----------
+const BITE_WORDS = ['Кусь!', 'Ам!', 'Ням!', 'Хрум!', 'Ой!'];
+function biteFx(p) {
+  SFX.bite();
+  headEl.classList.remove('chomp'); void headEl.offsetWidth; headEl.classList.add('chomp');
+  setTimeout(() => headEl.classList.remove('chomp'), 700);
+  const pt = map.project(toLL(p[0], p[1])), layer = $('fxlayer');
+  for (let i = 0; i < 14; i++) {
+    const c = document.createElement('div'), a = Math.random() * Math.PI * 2, r = 45 + Math.random() * 55;
+    c.className = 'crumb';
+    c.style.left = pt.x + 'px'; c.style.top = pt.y + 'px';
+    c.style.background = TRAFFIC[i % TRAFFIC.length][0];
+    c.style.setProperty('--dx', Math.cos(a) * r + 'px'); c.style.setProperty('--dy', Math.sin(a) * r + 'px');
+    layer.appendChild(c);
+    setTimeout(() => c.remove(), 800);
+  }
+  const w = document.createElement('div');
+  w.className = 'bite'; w.textContent = BITE_WORDS[Math.floor(Math.random() * BITE_WORDS.length)];
+  w.style.left = pt.x + 'px'; w.style.top = pt.y + 'px';
+  layer.appendChild(w);
+  setTimeout(() => w.remove(), 1000);
+}
+
+// ---------- жизни на карте: знак 7.1, съел — +1 жизнь (если жизней уже 3 — +2 очка) ----------
+const LIFE_COUNT = 2;
+let hearts = [];
+function spawnLife() {
+  if (!head || !P.length) return;
+  const hp = headPos(), near = nodesNear(hp, 900);
+  let i, tries = 0;
+  do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
+  while (tries < 300 && (dist(P[i], hp) < 250 || dist(P[i], hp) > 900 || hearts.some(h => dist(P[h.i], P[i]) < 400) || foods.some(f => dist(P[f.i], P[i]) < 80)));
+  const el = document.createElement('div');
+  el.className = 'sign life'; el.title = '+1 жизнь';
+  el.innerHTML = '<img src="signs/7.1.svg" alt="+1 жизнь" draggable="false">';
+  hearts.push({ i, m: new maplibregl.Marker({ element: el }).setLngLat(NODES[i]).addTo(map) });
+}
+function checkLives(hp) {
+  for (let j = hearts.length - 1; j >= 0; j--) {
+    const h = hearts[j], d = dist(P[h.i], hp);
+    if (d < EAT) {
+      h.m.remove(); hearts.splice(j, 1);
+      if (lives < LIVES_MAX) { lives++; renderLives(); toast(`+1 жизнь, теперь ${lives}`); }
+      else { score += 2; toast('Жизней уже 3: +2 очка'); }
+      SFX.eat(3); track('life_pickup', { lives });
+      spawnLife();
+    } else if (d > 1400) { h.m.remove(); hearts.splice(j, 1); spawnLife(); }
+  }
+}
+function resetLives() {
+  hearts.forEach(h => h.m.remove()); hearts = [];
+  for (let i = 0; i < LIFE_COUNT; i++) spawnLife();
+}
+
 // ---------- режим «ПДД»: съел знак — выбери его название из четырёх за 15 секунд ----------
 // верно — эффект знака и +2 очка, неверно или не успел — минус жизнь; в одном заезде названия знаков не повторяются
 const QUIZ_MS = 15000;
@@ -2141,7 +2279,7 @@ function frame(now) {
     quiz.left -= real; quizTimer();
     if (quiz.left <= 0) answerQuiz(-1);
   }
-  if (alive && !paused && !quiz && !held && map.getSource('body')) {
+  if (alive && !paused && !quiz && !held && now > freezeUntil && map.getSource('body')) {
     gameTime += dt * 1000;
     const v = speed * MULS[mulIdx] * speedFactor();
     curV = Math.max(v, speed * MULS[mulIdx]);
@@ -2154,11 +2292,13 @@ function frame(now) {
       if (!alive) break;
       const p = headPos();
       bodyGeo = buildBody(p);
+      checkLives(p);
       checkFood(p);
       if (!alive || quiz) break;
       // въехал в свой хвост — минус жизнь и 2 секунды щита, чтобы выехать
       if (hitSelf(p)) {
-        loseLife('Врезался в хвост');
+        biteFx(p);
+        loseLife('Укусил свой хвост');
         if (!alive) break;
         fx.push({ kind: 'shield', until: gameTime + 2000, k: '7.1' });
       }
