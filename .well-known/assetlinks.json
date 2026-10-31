@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.fedorchuk789.snake",
+    "sha256_cert_fingerprints": ["3C:19:2D:AD:B3:20:62:12:1B:46:0C:8F:5C:3F:50:26:E0:AB:F7:BA:D2:C6:F0:74:E1:1A:DE:3B:77:C8:98:CD"]
+  }
+}]

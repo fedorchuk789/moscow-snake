@@ -1,0 +1,14 @@
+© 2026 Павел Федорчук. Все права защищены.
+
+Snake Maps (https://snake-maps.ru): исходный код, оформление, название и логотип принадлежат автору. Копирование, изменение, распространение и использование в других проектах, в том числе частичное, без письменного разрешения автора запрещено. Открытый доступ к коду в этом репозитории не означает передачу каких-либо прав.
+
+Не относятся к правам автора и распространяются по собственным лицензиям:
+- данные карты и дорог: участники OpenStreetMap, Open Database License (ODbL);
+- картографическая подложка: OpenFreeMap;
+- изображения дорожных знаков: Wikimedia Commons, авторы и лицензии перечислены в signs/credits.tsv.
+
+---
+
+Copyright © 2026 Pavel Fedorchuk. All rights reserved.
+
+Snake Maps source code, design, name and logo may not be copied, modified, distributed or reused, in whole or in part, without the author's written permission. Public visibility of this repository grants no license. Map data © OpenStreetMap contributors (ODbL); road sign images from Wikimedia Commons under their own licenses (see signs/credits.tsv).
