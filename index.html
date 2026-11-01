@@ -530,7 +530,7 @@ if (inVK) {
     </div>
     <div class="grp">
       <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span><b id="speedVal">×1</b></div>
-      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="0.2" max="10" step="0.05" aria-label="Скорость змейки"></div>
+      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="1" max="10" step="1" aria-label="Скорость змейки"></div>
       <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
       <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
       <label class="row" for="voiceToggle"><i class="ri"></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
@@ -1126,9 +1126,10 @@ function setMuted(m) {
 }
 
 // ---------- скорость змейки ----------
-const MULS = [0.2, 0.25, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10];
+const MULS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];   // шаг ×1: дробные скорости игроку были не нужны
 let mulIdx = MULS.indexOf(1), toastT;
-try { const v = +localStorage.getItem('routeSnakeMul'); if (MULS.includes(v)) mulIdx = MULS.indexOf(v); } catch (e) {}
+// сохранённая раньше дробная скорость (×1,25 и т. п.) — берём ближайшую целую
+try { const v = +localStorage.getItem('routeSnakeMul'); if (v > 0) mulIdx = MULS.reduce((bi, m, i) => Math.abs(m - v) < Math.abs(MULS[bi] - v) ? i : bi, 0); } catch (e) {}
 function toast(text, ms = 1400, danger = false) {
   $('toast').textContent = text; $('toast').classList.add('on');
   $('toast').classList.remove('danger'); void $('toast').offsetWidth; $('toast').classList.toggle('danger', danger);
@@ -1687,7 +1688,7 @@ function syncMenu() {
 $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(); alive ? setPaused(true) : (syncMenu(), showPage('menu')); });
 $('resume').onclick = $('resumeRow').onclick = () => { closePanel(); setPaused(false); };
 $('restart').onclick = () => { closePanel(); closeOverlay('over'); start(); };
-// ползунок линейный по скорости (×6 — чуть правее середины), значение прилипает к ближайшей ступени
+// ползунок по целым скоростям ×1…×10
 $('speedRange').addEventListener('input', e => {
   const v = +e.target.value;
   setMul(MULS.reduce((bi, m, i) => Math.abs(m - v) < Math.abs(MULS[bi] - v) ? i : bi, 0), false);
