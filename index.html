@@ -221,6 +221,7 @@ if (inVK) {
   /* режим «ПДД»: выбор режима и вопрос по съеденному знаку */
   .modepick { margin-top: 16px; }
   .card .modepick .tab { font-size: 15px; padding: 9px; }
+  .card .modepick.overmode { margin-top: 0; }
   .card .modenote { margin-top: 8px; font-size: 13px; color: var(--muted); min-height: 36px; }
   .row.mode .modepick { flex: 1; margin: 0; }
   .quiz { background: rgba(20,24,30,.3); }
@@ -501,6 +502,7 @@ if (inVK) {
   <p class="rank" id="rank"></p>
   <p class="codenote" id="codeNote"></p>
   <div class="account"></div>
+  <div class="tabs modepick overmode" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div>
   <button id="again">Ещё раз</button>
   <div class="overBtns"><button class="ghost" id="overMenu">Меню</button><button class="ghost" id="overRecords">Рекорды</button></div>
 </div></div>
@@ -629,13 +631,14 @@ const norm = d => ((d % 360) + 540) % 360 - 180;
 // ---------- настройки ----------
 const START_LEN = 70, GROW = 45, BASE_SPEED = 38, MAX_SPEED = 75;
 const BLUE_ZONE = 28, SAFE_NECK = 38, HIT = 3.5, EAT = 15, FOOD_COUNT = 6;   // знаков на карте вокруг змейки: реже — чтобы не шли один за другим
+const foodCount = () => typeof gameMode !== 'undefined' && gameMode === 'pdd' ? 3 : FOOD_COUNT;
 const TRAFFIC = [['#3fb33f', .45], ['#2a8f2a', .2], ['#f7c21a', .23], ['#e8453c', .12]];
 // ---------- знаки ПДД: каталог (signs/index.json) и их влияние на игру ----------
 let CATALOG = [], BY_GROUP = {};
 fetch('signs/index.json?v=3').then(r => r.json()).then(list => {
   CATALOG = list;
   for (const s of list) (BY_GROUP[s.k.split('.')[0]] ||= []).push(s);
-  if (alive) while (foods.length < FOOD_COUNT) spawnFood();
+  if (alive) while (foods.length < foodCount()) spawnFood();
 }).catch(() => toast('Не удалось загрузить знаки'));
 const signName = k => (CATALOG.find(s => s.k === k) || {}).n || 'Знак ' + k;
 // [номер знака (регулярка), эффект]. Без эффекта знак даёт +1 очко и удлиняет змейку.
@@ -824,7 +827,7 @@ function reset() {
   camB = brg(head.from, head.to);
   (foods || []).forEach(f => f.m.remove());
   foods = [];
-  for (let i = 0; i < FOOD_COUNT; i++) spawnFood();
+  for (let i = 0; i < foodCount(); i++) spawnFood();
   if (typeof resetLives === 'function') resetLives();
   headMarker.setLngLat(toLL(...P[s])).addTo(map);
   setQueued(null);
@@ -875,14 +878,29 @@ function chooseNext(at, came, curB) {
   return r.n;
 }
 
+// ломаная не длиннее maxLen метров
+function clipLine(pts, maxLen) {
+  const out = [pts[0]];
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const L = dist(pts[i - 1], pts[i]);
+    if (acc + L >= maxLen) {
+      const t = (maxLen - acc) / (L || 1);
+      out.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]);
+      return out;
+    }
+    acc += L; out.push(pts[i]);
+  }
+  return out;
+}
 // стрелка манёвра: куда змейка поедет на ближайшем повороте
 function previewGeo(hp) {
-  let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1;
-  const pts = [hp, P[to]];
+  let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1, turnD = -1;
+  let pts = [hp, P[to]];
   while (d < 450) {
     if (after < 0 && !queued && isForcedJunction(to, from)) break;   // дальше решает игрок
     const r = pickExit(to, from, brg(from, to), after < 0 ? queueAt(to, from) : null);
-    if (r.used) after = 0;
+    if (r.used) { after = 0; turnD = d; }
     if (r.n === from) break;                           // тупик
     from = to; to = r.n;
     const L = dist(P[from], P[to]);
@@ -890,6 +908,8 @@ function previewGeo(hp) {
     if (after >= 0 && (after += L) > 45) break;
     if (!queued && d > 90) break;
   }
+  // на длинных улицах один отрезок бывает в сотни метров — стрелка уезжала далеко от змейки
+  pts = clipLine(pts, turnD >= 0 ? turnD + 45 : queued ? 120 : 55);
   // наконечник стрелки на последнем отрезке
   const B = pts[pts.length - 1], A = pts[pts.length - 2], len = dist(A, B) || 1;
   const ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len, s = 9;
@@ -973,9 +993,10 @@ function spawnFood() {
   if (!CATALOG.length) return;
   const hp = head ? headPos() : [0, 0];
   const near = nodesNear(hp, 550);
+  const pdd = gameMode === 'pdd', minHead = pdd ? 250 : 150, gap = pdd ? 320 : 180;   // в ПДД каждый знак — вопрос, их меньше
   let i, tries = 0;
   do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
-  while (tries < 300 && (dist(P[i], hp) < 150 || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < 180)));
+  while (tries < 300 && (dist(P[i], hp) < minHead || dist(P[i], hp) > 550 || foods.some(f => dist(P[f.i], P[i]) < gap)));
   // сначала группа ПДД (1–7), потом знак в ней: так ограничений скорости не слишком много
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
   // каждый пятый знак — из тех, что укорачивают хвост, иначе среди 358 знаков они почти не попадаются
@@ -1753,15 +1774,21 @@ const modeOf = r => r.mode === 'pdd' ? 'pdd' : 'classic';
 let myRowId = null;    // строка игрока в общей таблице, чтобы подсветить её (id одинаковый в обеих таблицах)
 
 const REMOTE = {
-  async load(mode) {
+  // бесплатный тариф Firebase — 50 тыс. чтений в день: топ-50 читаем не чаще раза в минуту
+  top: {},
+  async load(mode, fresh) {
     await initFirebase();
+    const c = this.top[mode];
+    if (!fresh && c && Date.now() - c.t < 60000) return c.list.map(r => ({ ...r }));
     const snap = await db.collection(SCORES[mode]).orderBy('len', 'desc').limit(50).get();
-    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    const list = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    this.top[mode] = { t: Date.now(), list };
+    return list.map(r => ({ ...r }));
   },
   async mine(mode) {
     await initFirebase();
     if (fbUser) {
-      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('len', 'desc').limit(100).get();
+      const snap = await db.collection('users').doc(fbUser.uid).collection('games').orderBy('len', 'desc').limit(60).get();
       return snap.docs.map(d => ({ ...d.data(), id: d.id })).filter(r => modeOf(r) === mode);
     }
     if (playerCode) {
@@ -1801,9 +1828,10 @@ const REMOTE = {
     }
   },
   async place(len, mode) {
-    // count() в compat-версии SDK нет: берём документы с большей длиной, таблица небольшая
-    const snap = await db.collection(SCORES[mode]).where('len', '>', len).limit(1000).get();
-    return snap.size + 1;
+    // место считаем по свежему топ-50 (50 чтений), а не по всей таблице
+    const list = await this.load(mode, true);
+    if (list.length >= 50 && len < list[list.length - 1].len) return 0;   // 0 — не в топ-50
+    return list.filter(r => r.len > len).length + 1;
   },
   async codeExists(c) {
     await initFirebase();
@@ -1915,12 +1943,15 @@ async function submitScore() {
     REMOTE.submit(rec).then(() => {
       if (!fbUser) $('codeNote').innerHTML = `Рекорд сохранён по коду <b>${prettyCode(playerCode)}</b>. Код есть в меню, с ним рекорды откроются на любом устройстве.`;
       return REMOTE.place(rec.len, mode);
-    }).then(p => { $('rank').textContent = `${p}-е место в общей таблице${where}`; }).catch(() => {});
+    }).then(p => { $('rank').textContent = p ? `${p}-е место в общей таблице${where}` : `Пока не в топ-50 общей таблицы${where}`; }).catch(() => {});
   }
   saveLocalScores([...localScores(), rec].sort(byScore));
   return rec;
 }
 let lastRecId = null, recTab = 'all', recMode = null;
+// «Мои» — все игры одного человека, поэтому вместо ника показываем дату
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const fmtDate = d => d ? `${+d.slice(8, 10)} ${MONTHS[+d.slice(5, 7) - 1]}` : '';
 const fmtLen = m => m >= 1000 ? (m / 1000).toFixed(2).replace('.', ',') + ' км' : m + ' м';
 const speedLabel = s => '×' + (+s || 1).toString().replace('.', ',');
 async function showRecords() {
@@ -1934,16 +1965,16 @@ async function showRecords() {
     const timeout = new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 8000));
     list = await Promise.race([recTab === 'all' ? REMOTE.load(recMode) : REMOTE.mine(recMode), timeout]);
     const of = recMode === 'pdd' ? ' в режиме ПДД' : ' в классическом режиме';
-    note = recTab === 'all' ? `Общая таблица: самая длинная змейка каждого игрока${of}.` : fbUser ? `Ваши игры${of} на всех устройствах с этим Google-аккаунтом.` : `Ваши игры${of} по коду игрока.`;
+    note = recTab === 'all' ? `Общая таблица: самая длинная змейка каждого игрока${of}, топ-50.` : fbUser ? `Ваши лучшие игры${of} на всех устройствах с этим Google-аккаунтом.` : `Ваши лучшие игры${of} по коду игрока.`;
   } catch (e) { note = 'Общая таблица сейчас недоступна, показаны рекорды этого устройства.'; }
   if (!list) {
     list = localScores().filter(r => modeOf(r) === recMode);
     if (!note) note = 'Рекорды этого устройства.';
   }
-  list = list.sort(byScore).slice(0, 30);
+  list = list.sort(byScore).slice(0, recTab === 'mine' ? 20 : 50);
   const me = r => r.id === lastRecId || (recTab === 'all' && r.id && r.id === myRowId);
   $('syncNote').textContent = note;
-  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(r.name)}</span><span class="len">${fmtLen(r.len)}</span></li>`).join('')
+  $('rlist').innerHTML = list.length ? list.map((r, i) => `<li class="${me(r) ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${recTab === 'mine' ? fmtDate(r.date) : esc(r.name)}</span><span class="len">${fmtLen(r.len)}</span></li>`).join('')
     : '<li class="emptyrow">Пока пусто. Сыграйте первую игру!</li>';
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2235,7 +2266,7 @@ function switchMode(m) {
   toast(m === 'pdd' ? 'Режим ПДД: за каждый знак — вопрос' : 'Классический режим');
   // знаки на карте ставим заново, чтобы в режиме ПДД они не повторялись
   foods.forEach(f => f.m.remove()); foods = [];
-  while (foods.length < FOOD_COUNT) spawnFood();
+  while (foods.length < foodCount()) spawnFood();
 }
 document.querySelectorAll('.modepick').forEach(el => el.addEventListener('click', e => {
   const t = e.target.closest('[data-mode]');
