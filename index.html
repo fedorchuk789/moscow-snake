@@ -2,6 +2,18 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113983992', 'ym');
+
+    ym(113983992, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+</script>
+<!-- /Yandex.Metrika counter -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Snake Maps</title>
 <meta name="theme-color" content="#ffffff">
@@ -418,6 +430,7 @@ if (inVK) {
 </style>
 </head>
 <body>
+<noscript><div><img src="https://mc.yandex.ru/watch/113983992" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <div id="map"></div>
 <div class="top">
   <div class="ring" title="Очки"><span id="score">0</span></div>
@@ -432,17 +445,17 @@ if (inVK) {
 <div class="places" id="places">
   <div class="place" data-key="home">
     <div class="pico"><svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20h-5v-5h-6v5H4z"/></svg></div>
-    <div class="ptext"><b>Домой</b><span class="paddr"></span><input class="pinput hidden" placeholder="Улица, дом" enterkeyhint="done"></div>
+    <div class="ptext"><b>Домой</b><span class="paddr"></span><input class="pinput hidden ym-hide-content ym-disable-keys" placeholder="Улица, дом" enterkeyhint="done"></div>
     <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
   </div>
   <div class="place" data-key="work">
     <div class="pico"><svg viewBox="0 0 24 24"><path d="M3.5 8.5h17V19h-17z"/><path d="M9 8.5V6h6v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-    <div class="ptext"><b>На работу</b><span class="paddr"></span><input class="pinput hidden" placeholder="Улица, дом" enterkeyhint="done"></div>
+    <div class="ptext"><b>На работу</b><span class="paddr"></span><input class="pinput hidden ym-hide-content ym-disable-keys" placeholder="Улица, дом" enterkeyhint="done"></div>
     <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
   </div>
   <div class="place" data-key="any">
     <div class="pico"><svg viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 3.5L16 11H7v10z"/></svg></div>
-    <div class="ptext"><b>Куда угодно</b><span class="paddr"></span><input class="pinput hidden" placeholder="Адрес или место" enterkeyhint="done"></div>
+    <div class="ptext"><b>Куда угодно</b><span class="paddr"></span><input class="pinput hidden ym-hide-content ym-disable-keys" placeholder="Адрес или место" enterkeyhint="done"></div>
     <button class="pedit" title="Изменить адрес"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
   </div>
 </div>
@@ -492,7 +505,7 @@ if (inVK) {
   <p id="result"></p>
   <div class="namebox hidden" id="nameBox">
     <label for="nameInput">Ник для таблицы рекордов</label>
-    <div class="row"><input id="nameInput" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
+    <div class="row"><input id="nameInput" class="ym-hide-content ym-disable-keys" maxlength="16" placeholder="Например, Пётр" autocomplete="nickname" enterkeyhint="done"><button class="small" id="nameSave">Сохранить</button></div>
   </div>
   <p class="earned" id="earned"></p>
   <div class="revive hidden" id="reviveBox">
@@ -546,7 +559,7 @@ if (inVK) {
     </div>
     <div class="grp">
       <div class="row tall"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></i><div class="account"></div></div>
-      <label class="row" for="menuName"><i class="ri"></i><span>Ник</span><input id="menuName" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></label>
+      <label class="row" for="menuName"><i class="ri"></i><span>Ник</span><input id="menuName" class="ym-hide-content ym-disable-keys" maxlength="16" placeholder="Без ника" autocomplete="nickname" enterkeyhint="done"></label>
     </div>
     <div class="grp">
       <button class="row" id="fullBtn"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></i><span id="fullLabel">Во весь экран</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -1769,8 +1782,10 @@ initFirebase().catch(() => renderAccount());
 // ---------- аналитика (Google Analytics через Firebase) ----------
 let analytics = null;
 const pendingEvents = [];
+const YM_GOALS = new Set(['game_start', 'game_over', 'route_set', 'route_arrive', 'mode', 'self_eat']);
 function track(name, params = {}) {
   try { analytics ? analytics.logEvent(name, params) : pendingEvents.length < 50 && pendingEvents.push([name, params]); } catch (e) {}
+  try { if (YM_GOALS.has(name) && window.ym) ym(113983992, 'reachGoal', name, params); } catch (e) {}
 }
 
 // Кто пишет в общую таблицу: вошедший через Google (строка = uid)
@@ -1909,7 +1924,7 @@ function renderAccount() {
          <div class="code"><b>${prettyCode(playerCode)}</b><button class="ghost" data-act="copy">Копировать</button></div>`
       : `<span>Без входа рекорды хранятся по коду игрока. Код появится после первой игры.</span>`;
     html = `${code}
-      <div class="codeform hidden"><input class="codein" placeholder="XXXX-XXXX-XXXX" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="done"><button class="ghost" data-act="usecode">Готово</button></div>
+      <div class="codeform hidden"><input class="codein ym-hide-content ym-disable-keys" placeholder="XXXX-XXXX-XXXX" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="done"><button class="ghost" data-act="usecode">Готово</button></div>
       <button class="ghost" data-act="havecode">${playerCode ? 'Ввести другой код' : 'У меня есть код'}</button>
       <button class="google" data-act="in">Войти через Google</button>`;
   }
