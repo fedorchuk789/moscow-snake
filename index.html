@@ -156,6 +156,7 @@ if (inVK) {
   .head.chomp svg { animation: chomp .11s ease-in-out 6 alternate; }
   @keyframes chomp { from { transform: scale(1.25, .7); } to { transform: scale(.8, 1.2); } }
   .fxlayer { position: fixed; inset: 0; pointer-events: none; z-index: 11; overflow: hidden; }
+  .neck { position: absolute; left: 0; top: 0; pointer-events: none; }
   .crumb { position: absolute; width: 13px; height: 13px; border-radius: 50%; margin: -6px 0 0 -6px; border: 2px solid #fff; box-sizing: border-box; animation: crumb .7s ease-out forwards; }
   @keyframes crumb { to { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; } }
   .bite { position: absolute; transform: translate(-50%, -150%); font: 900 22px/1 system-ui, sans-serif; color: #e8453c; -webkit-text-stroke: 1.5px #fff;
@@ -878,29 +879,14 @@ function chooseNext(at, came, curB) {
   return r.n;
 }
 
-// ломаная не длиннее maxLen метров
-function clipLine(pts, maxLen) {
-  const out = [pts[0]];
-  let acc = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const L = dist(pts[i - 1], pts[i]);
-    if (acc + L >= maxLen) {
-      const t = (maxLen - acc) / (L || 1);
-      out.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]);
-      return out;
-    }
-    acc += L; out.push(pts[i]);
-  }
-  return out;
-}
 // стрелка манёвра: куда змейка поедет на ближайшем повороте
 function previewGeo(hp) {
-  let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1, turnD = -1;
-  let pts = [hp, P[to]];
+  let from = head.from, to = head.to, d = dist(hp, P[to]), after = -1;
+  const pts = [hp, P[to]];
   while (d < 450) {
     if (after < 0 && !queued && isForcedJunction(to, from)) break;   // дальше решает игрок
     const r = pickExit(to, from, brg(from, to), after < 0 ? queueAt(to, from) : null);
-    if (r.used) { after = 0; turnD = d; }
+    if (r.used) after = 0;
     if (r.n === from) break;                           // тупик
     from = to; to = r.n;
     const L = dist(P[from], P[to]);
@@ -908,8 +894,6 @@ function previewGeo(hp) {
     if (after >= 0 && (after += L) > 45) break;
     if (!queued && d > 90) break;
   }
-  // на длинных улицах один отрезок бывает в сотни метров — стрелка уезжала далеко от змейки
-  pts = clipLine(pts, turnD >= 0 ? turnD + 45 : queued ? 120 : 55);
   // наконечник стрелки на последнем отрезке
   const B = pts[pts.length - 1], A = pts[pts.length - 2], len = dist(A, B) || 1;
   const ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len, s = 9;
@@ -968,6 +952,49 @@ function buildBody(hp) {
     cur.pts.push(b);
   }
   return { type: 'FeatureCollection', features: feats.map(f => ({ type: 'Feature', properties: { c: redden(f.c) }, geometry: { type: 'LineString', coordinates: f.pts.map(p => toLL(p[0], p[1])) } })) };
+}
+// «Шея»: первые десятки метров тела рисуем своим холстом прямо в кадре.
+// Слой карты (GeoJSON) обновляется в фоне вместе с плитками, и на телефонах тело отставало от стрелки
+// на 20–30 м. Остальное тело по-прежнему рисует карта: его отставание прячется под шеей
+const neck = document.createElement('canvas');
+neck.className = 'neck';
+map.getCanvasContainer().insertBefore(neck, map.getCanvas().nextSibling);
+const zw = (a, b) => { const z = Math.max(15, Math.min(17, map.getZoom())); return a + (b - a) * (Math.pow(2, z - 15) - 1) / 3; };
+function drawNeck() {
+  const cv = map.getCanvas(), dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (neck.width !== Math.round(w * dpr) || neck.height !== Math.round(h * dpr)) {
+    neck.width = Math.round(w * dpr); neck.height = Math.round(h * dpr); neck.style.width = w + 'px'; neck.style.height = h + 'px';
+  }
+  const g = neck.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, neck.width, neck.height);
+  if (!alive && !eating || !bodyPieces || !bodyPieces.length) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.lineCap = 'butt'; g.lineJoin = 'round';   // плоский конец: на стыке с остальным телом не видно колечка обводки
+  const maxD = Math.max(70, curV * .6);           // на скорости фон отстаёт сильнее — шея длиннее
+  const runs = [];
+  let cur = null;
+  for (const [a, b, c, d0] of bodyPieces) {
+    if (d0 >= maxD) break;
+    const len = dist(a, b), B = d0 + len > maxD ? [a[0] + (b[0] - a[0]) * (maxD - d0) / len, a[1] + (b[1] - a[1]) * (maxD - d0) / len] : b;
+    if (!cur || cur.c !== c) { cur = { c, pts: [a] }; runs.push(cur); }
+    cur.pts.push(B);
+  }
+  const px = q => map.project(toLL(q[0], q[1]));
+  for (const r of runs) r.xy = r.pts.map(px);
+  const path = xy => { g.beginPath(); g.moveTo(xy[0].x, xy[0].y); for (let i = 1; i < xy.length; i++) g.lineTo(xy[i].x, xy[i].y); };
+  const s = SKINS.find(x => x.id === garage.skin) || SKINS[0];
+  g.globalAlpha = s.caseOp ?? 1; g.strokeStyle = s.case; g.lineWidth = zw(7, 20);
+  for (const r of runs) { path(r.xy); g.stroke(); }
+  g.globalAlpha = s.mainOp ?? 1; g.lineWidth = zw(4.5, 13);
+  for (const r of runs) { g.strokeStyle = s.main ? redden(s.main) : redden(r.c); path(r.xy); g.stroke(); }
+  if (s.top) {
+    const t = s.top;
+    g.globalAlpha = t.op ?? 1; g.strokeStyle = t.c; g.lineWidth = zw(4.5 * t.k, 13 * t.k); g.lineCap = t.cap === 'round' ? 'butt' : t.cap || 'butt';
+    if (t.dash) g.setLineDash(t.dash.map(x => x * g.lineWidth));
+    for (const r of runs) { path(r.xy); g.stroke(); }
+    g.setLineDash([]);
+  }
+  g.globalAlpha = 1;
 }
 // каждый съеденный «Въезд запрещён» подмешивает к цветам маршрута красный
 function redden(hex) {
@@ -2205,6 +2232,32 @@ function biteFx(p) {
   setTimeout(() => w.remove(), 1000);
 }
 
+// последняя жизнь ушла на укус хвоста: голова жуёт, тело с хвоста укорачивается до самой головы
+const EAT_MS = 2600;
+let eating = null;
+function startSelfEat() {
+  eating = { t0: performance.now(), L0: bodyLen, next: 0 };
+  setQueued(null);
+  if (map.getSource('preview')) map.getSource('preview').setData(empty());
+  toast('Ой! Змейка ест сама себя…', 2400, true);
+  track('self_eat', { length: Math.round(bodyLen) });
+}
+function selfEatStep(now) {
+  const k = Math.min(1, (now - eating.t0) / EAT_MS), hp = headPos();
+  bodyLen = Math.max(0, eating.L0 * (1 - k * k * (3 - 2 * k)));   // плавно: сначала медленно, потом быстрее
+  map.getSource('body').setData(buildBody(hp));
+  drawNeck();
+  if (now >= eating.next) {                // жуёт с хрустом каждые ~0,3 с
+    eating.next = now + 300;
+    biteFx(hp);
+  }
+  if (k < 1) return;
+  bodyLen = eating.L0;                     // в результат и рекорды идёт длина до укуса, а не съеденная
+  eating = null;
+  lives = 0; renderLives();
+  gameOver('Змейка съела себя!');
+}
+
 // ---------- жизни на карте: знак 7.1, съел — +1 жизнь, но не больше 5 ----------
 // на карте одна жизнь, новая появляется через 25 секунд после того, как подобрали прошлую
 const LIFE_COUNT = 1, LIFE_PAUSE = 25000;
@@ -2340,7 +2393,8 @@ function frame(now) {
     quiz.left -= real; quizTimer();
     if (quiz.left <= 0) answerQuiz(-1);
   }
-  if (alive && !paused && !quiz && !held && now > freezeUntil && map.getSource('body')) {
+  if (eating) selfEatStep(now);
+  if (alive && !paused && !quiz && !held && !eating && now > freezeUntil && map.getSource('body')) {
     gameTime += dt * 1000;
     const v = speed * MULS[mulIdx] * speedFactor();
     curV = Math.max(v, speed * MULS[mulIdx]);
@@ -2355,9 +2409,10 @@ function frame(now) {
       bodyGeo = buildBody(p);
       checkLives(p);
       checkFood(p);
-      if (!alive || quiz) break;
+      if (!alive || quiz || eating) break;
       // въехал в свой хвост — минус жизнь и 2 секунды щита, чтобы выехать
       if (hitSelf(p)) {
+        if (lives <= 1) { startSelfEat(); break; }   // последняя жизнь: долгая анимация, потом авария
         biteFx(p);
         loseLife('Укусил свой хвост');
         if (!alive) break;
@@ -2379,6 +2434,7 @@ function frame(now) {
     headMarker.setLngLat(ll).setRotation(b);
     const z = map.getZoom();
     map.jumpTo({ center: ll, bearing: camB, zoom: z + (zoomLvl - z) * Math.min(1, dt * 8) });
+    drawNeck();
     $('score').textContent = score; $('len').textContent = Math.round(bodyLen); $('eaten').textContent = eaten;
   }
   requestAnimationFrame(frame);
@@ -2386,6 +2442,7 @@ function frame(now) {
 function start() {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   if (!runFinished) finishRun();          // ушли со страницы аварии, не выбрав запаску
+  eating = null;
   reset(); alive = true; paused = false;
   quiz = null; closeOverlay('quiz'); askedNames.clear(); quizAsked = quizRight = 0; runStartMode = gameMode; modeSwitched = false;
   runLiters = 0; kmPaid = 0; odo0 = odo; revivedThisRun = false; runFinished = true;
@@ -2407,6 +2464,7 @@ function gameOver(reason = 'Авария!') {
   track('game_over', { score, eaten, length: Math.round(bodyLen), seconds: Math.round(gameTime / 1000), reason: bricks >= BRICKS_MAX ? 'bricks' : 'crash' });
   if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
   if (map.getSource('preview')) map.getSource('preview').setData(empty());
+  drawNeck();                              // после аварии карта стоит: всё тело снова рисует сама карта
   fx = []; renderFx();
   $('result').textContent = `Знаков: ${eaten}. Очков: ${score}. Длина змейки: ${Math.round(bodyLen)} м.` + (quizAsked ? ` Ответов на вопросы: ${quizRight} из ${quizAsked}.` : '');
   $('earned').textContent = runLiters ? `Заработано: +${runLiters} л · в баке ${garage.liters} л` : '';
