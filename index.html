@@ -165,6 +165,75 @@ if (inOK) {
   .tip .pico { width: 36px; height: 36px; }
   .tip .ico { width: 20px; height: 20px; }
   .keys { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  #start.first .tips, #start.first .keys, #start.first .avoid { display: none; }
+  /* стартовое окно как в Roblox: инструкция режима и «Избегай:» */
+  .card .tips { margin: 14px 0 0; }
+  .tip .pico svg.ico { fill: none; }
+  .avoid { margin-top: 14px; text-align: center; }
+  .avoid b { font-size: 14px; color: var(--ink); }
+  .avrow { display: flex; justify-content: center; gap: 22px; margin-top: 8px; }
+  .av { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; }
+  .av img { height: 36px; width: auto; }
+  .av small { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .card .msel { margin-top: 16px; padding: 10px; border-radius: 12px; }
+  .msel.ghost { background: #f1f1f1; }
+  .card .msel .mstep { margin: 0; width: 44px; padding: 0; border-radius: 50%; background: var(--green); }
+  .card .msel .mname small { font-size: 12px; }
+  .card #over .msel, #over .msel { margin: 0 0 4px; }
+  [data-theme="dark"] .msel.ghost { background: #2c2d32; }
+  /* плашки в начале заезда: по очереди всплывают сверху, иконка покачивается */
+  .gchip { position: absolute; left: 50%; top: calc(var(--gap) + var(--st) + var(--btn) + 66px); transform: translateX(-50%); z-index: 12; height: 60px; box-sizing: border-box;
+           display: flex; align-items: center; gap: 10px; padding: 0 16px 0 12px; border-radius: 16px; background: #fffbe6; border: 1.5px solid #f2d36b;
+           box-shadow: var(--shadow); white-space: nowrap; font-size: 18px; font-weight: 700; color: var(--ink); pointer-events: none; max-width: calc(100% - 24px); }
+  .gchip.pop { animation: chipPop .25s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes chipPop { from { transform: translateX(-50%) scale(.6); } }
+  .gchip .gi { width: 40px; height: 40px; border-radius: 8px; background: var(--card); display: grid; place-items: center; flex: none; animation: chipWob .35s ease-in-out infinite alternate; }
+  .gchip .gi .ico { width: 26px; height: 26px; }
+  .gchip img.gs { height: 38px; width: auto; animation: chipWob .35s ease-in-out infinite alternate; }
+  @keyframes chipWob { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+  .gchip .sw { position: relative; width: 76px; height: 40px; border-radius: 8px; background: var(--card); flex: none; }
+  .gchip .sw .ico { position: absolute; width: 16px; height: 16px; stroke: var(--muted); }
+  .gchip .sw::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); }
+  .gchip .sw.lr .ico:first-child { left: 4px; top: 12px; } .gchip .sw.lr .ico:last-child { right: 4px; top: 12px; }
+  .gchip .sw.lr::after { top: 13px; left: 17px; animation: swLR .7s ease-in-out infinite alternate; }
+  .gchip .sw.up .ico { left: 30px; top: 2px; }
+  .gchip .sw.up::after { left: 31px; top: 22px; animation: swUp .7s ease-in-out infinite; }
+  @keyframes swLR { to { left: 45px; } }
+  @keyframes swUp { from { top: 24px; opacity: 1; } to { top: 14px; opacity: 0; } }
+  /* телефон: плашка от левого края до боковых кнопок, текст переносится */
+  @media (max-width: 640px) {
+    .gchip { top: calc(var(--gap) + var(--st) + var(--btn) * 2 + 24px); left: calc(var(--gap) + var(--sl)); right: calc(var(--gap) + var(--sr) + var(--btn) + 10px);
+             transform: none; max-width: none; height: auto; min-height: 60px; padding: 8px 12px; white-space: normal; font-size: 16px; line-height: 1.25; }
+    .gchip.pop { animation-name: chipPopN; }
+    @keyframes chipPopN { from { transform: scale(.6); } }
+  }
+  @media (prefers-reduced-motion: reduce) { .gchip .gi, .gchip img.gs, .gchip .sw::after { animation: none; } }
+  [data-theme="dark"] .gchip { background: #3a3420; border-color: #6b5a22; }
+  body.tutoring .places, body.tutoring #placesBtn { display: none !important; }
+  /* меню как в Roblox-версии */
+  .grp.blue { background: #eaf1fe; box-shadow: inset 0 0 0 2px var(--blue); }
+  .grp.blue .row + .row::before { background: #cfdcf5; }
+  .gtitle { margin: 12px 0 0; text-align: center; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .msel { display: flex; align-items: center; gap: 8px; padding: 6px 10px 12px; }
+  .mstep { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--green); display: grid; place-items: center; cursor: pointer; flex: none; }
+  .mstep .ico { stroke: #fff; stroke-width: 2.6; }
+  .mname { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .mname b { font-size: 18px; font-weight: 800; color: var(--ink); }
+  .mname small { font-size: 13px; color: #555; line-height: 1.25; }
+  .mdots { display: flex; gap: 5px; margin-top: 4px; }
+  .mdots i { width: 6px; height: 6px; border-radius: 50%; background: #c4cfe2; }
+  .mdots i.on { background: var(--blue); }
+  .rsub { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .stepb { width: 36px; height: 32px; border: 0; border-radius: 8px; background: #f1f1f1; display: grid; place-items: center; cursor: pointer; flex: none; padding: 0; }
+  .stepb .ico { width: 18px; height: 18px; }
+  .row b.sval { min-width: 34px; text-align: center; }
+  /* «Управление свайпами»: кнопок поворота нет, задание обучения опускается вниз */
+  body.swipeonly .pad { display: none; }
+  body.swipeonly .coach { bottom: calc(18px + var(--sb)); }
+  /* «Скрыть интерфейс»: остаются кнопка меню и кнопки поворота */
+  body.nohud .top, body.nohud .places, body.nohud .side > :not(#menuBtn), body.nohud .fx { display: none !important; }
+  [data-theme="dark"] .grp.blue { background: #1f2f4a; } [data-theme="dark"] .grp.blue .row + .row::before { background: #2d4166; }
+  [data-theme="dark"] .mname small { color: #b8bac0; } [data-theme="dark"] .stepb { background: #34353b; }   /* в обучении «Мои места» не нужны и закрывают финиш */   /* новичка учит сам заезд, а не текст */
   @media (hover: none) { .keys { display: none; } }
   .card button { margin-top: 18px; width: 100%; font-size: 18px; padding: 14px; border: 0; border-radius: 12px; background: #ffcc00; font-weight: 700; cursor: pointer; color: var(--ink); }
   .hidden { display: none !important; }
@@ -444,6 +513,52 @@ if (inOK) {
   #themeBtn .moon { display: none; }
   [data-theme="dark"] #themeBtn .moon { display: block; }
   [data-theme="dark"] #themeBtn .sun { display: none; }
+  /* ---------- обучение: задание-плашка над кнопками, подсветка кнопок и целей на карте ---------- */
+  .coach { position: absolute; left: 50%; bottom: calc(18px + 60px + 14px + var(--sb)); transform: translateX(-50%); z-index: 13; width: min(360px, calc(100% - 32px));
+           background: var(--card); border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.22); padding: 12px 14px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; }
+  .coach.pop { animation: coachPop .35s ease-out; }
+  @keyframes coachPop { from { transform: translateX(-50%) translateY(16px) scale(.92); opacity: 0; } }
+  .coach .cico { width: 46px; height: 46px; flex: none; border-radius: 12px; background: #fff6cc; display: grid; place-items: center; animation: coachSway 1.4s ease-in-out infinite alternate; }
+  .coach .cico img { width: 34px; height: 34px; }
+  .coach .cico .ico { width: 28px; height: 28px; stroke-width: 2.4; }
+  @keyframes coachSway { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+  .coach .cbody { flex: 1; min-width: 0; }
+  .coach .ctop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .coach .dots { display: flex; gap: 5px; }
+  .coach .dots i { width: 8px; height: 8px; border-radius: 50%; background: #dcdcdc; }
+  .coach .dots i.on { background: #ffcc00; } .coach .dots i.done { background: var(--green); }
+  .coach .skip { border: 0; background: none; font-size: 13px; color: var(--muted); cursor: pointer; padding: 2px 0 2px 8px; }
+  .coach b { display: block; font-size: 17px; color: var(--ink); margin-top: 4px; }
+  .coach small { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .coach .bad { display: flex; gap: 6px; margin-top: 6px; }
+  .coach .bad img { height: 26px; width: auto; }
+  .coach.ok .cico { background: #e3f6e8; animation: none; }
+  .coach.ok b { color: var(--green); }
+  .coach .swipe { position: relative; width: 64px; height: 22px; flex: none; display: none; }
+  .coach.swipeL .swipe, .coach.swipeR .swipe { display: block; }
+  .coach .swipe::before { content: ''; position: absolute; left: 4px; right: 4px; top: 10px; height: 2px; background: #e0e0e0; border-radius: 2px; }
+  .coach .swipe::after { content: ''; position: absolute; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #ffcc00; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  .coach.swipeL .swipe::after { animation: swipeL 1.1s ease-in-out infinite; }
+  .coach.swipeR .swipe::after { animation: swipeR 1.1s ease-in-out infinite; }
+  @keyframes swipeL { from { left: 44px; opacity: 1; } 80% { left: 4px; opacity: 1; } to { left: 4px; opacity: 0; } }
+  @keyframes swipeR { from { left: 4px; opacity: 1; } 80% { left: 44px; opacity: 1; } to { left: 44px; opacity: 0; } }
+  .pad button.tglow { background: #ffcc00; animation: tglow .6s ease-in-out infinite alternate; }
+  @keyframes tglow { from { box-shadow: 0 0 0 0 rgba(255,204,0,.8); } to { box-shadow: 0 0 0 10px rgba(255,204,0,0); transform: translateY(-3px); } }
+  .tring { width: 44px; height: 44px; border-radius: 50%; border: 4px solid #ffcc00; box-sizing: border-box; pointer-events: none; animation: tring 1s ease-out infinite; }
+  @keyframes tring { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: .15; } }
+  .sign.tgood img, .sign.tbad img { height: 44px; }
+  .sign.tgood { filter: drop-shadow(0 0 8px rgba(255,204,0,1)); }
+  .sign.tbad { filter: drop-shadow(0 0 8px rgba(232,69,60,1)); }
+  .tlabel { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 14px; font-weight: 700;
+            padding: 4px 10px; border-radius: 999px; background: #ffcc00; color: #1a1a1a; box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none;
+            animation: tbob .6s ease-in-out infinite alternate; }
+  .tlabel.red { background: #e8453c; color: #fff; }
+  .tlabel.blue { background: #2f6fed; color: #fff; }
+  @keyframes tbob { to { transform: translateX(-50%) translateY(-5px); } }
+  .ttail { position: relative; width: 14px; height: 14px; border-radius: 50%; background: #2f6fed; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .coach .cico, .pad button.tglow, .tring, .tlabel, .coach .swipe::after { animation: none !important; } }
+  [data-theme="dark"] .coach .cico { background: #4a4220; } [data-theme="dark"] .coach .dots i { background: #4a4b52; }
+  [data-theme="dark"] .pad button.tglow .ico { stroke: #1a1a1a; }
 </style>
 </head>
 <body>
@@ -498,22 +613,42 @@ if (inOK) {
   <div class="nturn" id="nturn"><svg class="ico" viewBox="0 0 24 24" id="nturnIco"></svg><div class="ntext"><b id="nturnDist"></b><small id="nrest"></small></div></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="gchip hidden" id="gchip" aria-live="polite"></div>
 <div class="fxlayer" id="fxlayer"></div>
 <div class="pad">
   <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button data-k="S" title="Прямо"><svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>
   <button data-k="R" title="Направо"><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
 </div>
+<div class="coach hidden" id="coach" role="status" aria-live="polite">
+  <div class="cico" id="coachIco"></div>
+  <div class="cbody">
+    <div class="ctop"><div class="dots" id="coachDots"></div><button class="skip" id="coachSkip">Пропустить</button></div>
+    <b id="coachTitle"></b><small id="coachSub"></small><div class="bad hidden" id="coachBad"><img src="signs/2.5.svg" alt="Стоп"><img src="signs/1.25.svg" alt="Дорожные работы"><img src="signs/3.1.svg" alt="Въезд запрещён"></div>
+  </div>
+  <div class="swipe" aria-hidden="true"></div>
+</div>
+<div class="overlay hidden" id="tutDone"><div class="card">
+  <h1>Обучение пройдено!</h1>
+  <p id="tutResult"></p>
+  <button id="tutPlay">Играть</button>
+</div></div>
 <div class="overlay" id="start"><div class="card">
   <h1>Snake Maps</h1>
-  <p>Змейка по настоящим улицам Москвы в пределах МКАД: собирай дорожные знаки и не врезайся в свой хвост.</p>
-  <div class="tips">
-    <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></svg></div>Поворот на ближайшем перекрёстке: кнопки внизу, свайп или стрелки</div>
-    <div class="tip"><div class="pico"><img src="signs/7.1.svg" alt="" style="width:22px;height:22px"></div>3 жизни, знаки «+» на карте добавляют ещё, до 5. Мигают две стрелки — дорога упирается в перекрёсток: выбери поворот, иначе минус жизнь</div>
-    <div class="tip"><div class="pico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></div>Добавь «Домой» и «На работу», доедь туда за +5 очков</div>
+  <div class="tips" id="modeTips"></div>
+  <div class="avoid">
+    <b>Избегай:</b>
+    <div class="avrow">
+      <div class="av"><img src="signs/2.5.svg" alt="Стоп"><small>стоп 3 с</small></div>
+      <div class="av"><img src="signs/1.25.svg" alt="Дорожные работы"><small>−60 м</small></div>
+      <div class="av"><img src="signs/3.1.svg" alt="Въезд запрещён"><small>−1 жизнь</small></div>
+    </div>
   </div>
-  <div class="tabs modepick" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div>
-  <p class="modenote" id="modeNote"></p>
+  <div class="msel ghost">
+        <button class="mstep" data-step="-1" aria-label="Предыдущий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="mname"><b class="mn"></b><small class="ms"></small><span class="mdots"></span></div>
+        <button class="mstep" data-step="1" aria-label="Следующий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
   <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук · Q режим ПДД</div>
   <div class="startAuth" id="startAuth"></div>
 </div></div>
@@ -533,7 +668,11 @@ if (inOK) {
   <p class="rank" id="rank"></p>
   <p class="codenote" id="codeNote"></p>
   <div class="account"></div>
-  <div class="tabs modepick overmode" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div>
+  <div class="msel ghost">
+        <button class="mstep" data-step="-1" aria-label="Предыдущий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="mname"><b class="mn"></b><small class="ms"></small><span class="mdots"></span></div>
+        <button class="mstep" data-step="1" aria-label="Следующий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
   <button id="again">Ещё раз</button>
   <div class="overBtns"><button class="ghost" id="overMenu">Меню</button><button class="ghost" id="overRecords">Рекорды</button></div>
 </div></div>
@@ -554,25 +693,40 @@ if (inOK) {
     <div class="grp">
       <button class="row" id="resumeRow"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></svg></i><span>Продолжить</span><small class="kbd">Esc</small></button>
       <button class="row" id="restart"><i class="ri"></i><span>Начать заново</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="row" id="menuTutorial"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11v5c3 2 7 2 10 0v-5"/></svg></i><span>Обучение</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <!-- как в Roblox-версии: режим — в синей рамке под «Начать заново», ниже гараж/рекорды/знаки, потом управление и настройки -->
+    <div class="grp blue">
+      <p class="gtitle">Режим игры</p>
+      <div class="msel">
+        <button class="mstep" data-step="-1" aria-label="Предыдущий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="mname"><b class="mn"></b><small class="ms"></small><span class="mdots"></span></div>
+        <button class="mstep" data-step="1" aria-label="Следующий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+    <div class="grp blue">
+      <button class="row" id="menuGarage"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M3 20V9l9-5 9 5v11"/><path d="M7 20v-7h10v7M7 16h10"/></svg></i><span>Гараж</span><b id="menuLiters">0 л</b><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="row" id="menuRecords"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></i><span>Рекорды</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="row" id="menuSigns"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5L21 19H3z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".4"/></svg></i><span>Знаки и их эффекты</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
     <div class="grp">
-      <div class="row mode"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3L21.5 19.5H2.5z"/><path d="M10 11a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3"/><circle cx="12" cy="16.6" r=".4"/></svg></i><div class="tabs modepick" role="radiogroup" aria-label="Режим игры"><button class="tab" data-mode="classic">Классический</button><button class="tab" data-mode="pdd">ПДД</button></div></div>
+      <label class="row" for="swipeToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></i><span>Управление свайпами<small class="rsub">Кнопки поворота скрыты</small></span><input type="checkbox" id="swipeToggle" class="switch"></label>
+      <label class="row" for="hudToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg></i><span>Скрыть интерфейс<small class="rsub">Остаются меню и кнопки поворота</small></span><input type="checkbox" id="hudToggle" class="switch"></label>
     </div>
     <div class="grp">
-      <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span><b id="speedVal">×1</b></div>
-      <div class="row slide"><i class="ri"></i><input type="range" id="speedRange" min="1" max="10" step="1" aria-label="Скорость змейки"></div>
-      <label class="row" for="hintToggle"><i class="ri"></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
-      <label class="row" for="soundToggle"><i class="ri"></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
-      <label class="row" for="voiceToggle"><i class="ri"></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
+      <div class="row"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-4"/></svg></i><span>Скорость</span>
+        <button class="stepb" id="speedMinus" aria-label="Медленнее"><svg class="ico" viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button><b id="speedVal" class="sval">×1</b><button class="stepb" id="speedPlus" aria-label="Быстрее"><svg class="ico" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button></div>
+      <label class="row" for="hintToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/></svg></i><span>Подсказка поворота</span><input type="checkbox" id="hintToggle" class="switch"></label>
+      <label class="row" for="soundToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg></i><span>Звук</span><input type="checkbox" id="soundToggle" class="switch"></label>
+      <label class="row" for="musicToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg></i><span>Музыка</span><input type="checkbox" id="musicToggle" class="switch"></label>
+      <button class="row" id="melodyRow"><i class="ri"></i><span>Мелодия</span><b id="melodyName"></b><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <label class="row" for="voiceToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg></i><span>Голосовые подсказки маршрута</span><input type="checkbox" id="voiceToggle" class="switch"></label>
       <label class="row" for="voiceSel"><i class="ri"></i><span>Голос навигатора</span><select id="voiceSel" aria-label="Голос навигатора">
         <option value="female">Женский</option><option value="male">Мужской</option><option value="child">Детский</option><option value="cartoon">Мультяшный</option>
       </select></label>
-      <label class="row" for="themeToggle"><i class="ri"></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
+      <label class="row" for="themeToggle"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></i><span>Тёмная тема</span><input type="checkbox" id="themeToggle" class="switch"></label>
     </div>
     <div class="grp">
-      <button class="row" id="menuGarage"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M3 20V9l9-5 9 5v11"/><path d="M7 20v-7h10v7M7 16h10"/></svg></i><span>Гараж</span><b id="menuLiters">0 л</b><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="row" id="menuRecords"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg></i><span>Рекорды</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-      <button class="row" id="menuSigns"><i class="ri"></i><span>Знаки и их эффекты</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="row" id="menuSupport"><i class="ri"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 3.3 6.5L4 19.5l1-3.4A8 8 0 0 1 4 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1v.5"/><circle cx="12" cy="16.3" r=".4"/></svg></i><span>Поддержка</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
     <div class="grp">
@@ -682,7 +836,7 @@ let CATALOG = [], BY_GROUP = {};
 fetch('signs/index.json?v=3').then(r => r.json()).then(list => {
   CATALOG = list;
   for (const s of list) (BY_GROUP[s.k.split('.')[0]] ||= []).push(s);
-  if (alive) while (foods.length < foodCount()) spawnFood();
+  if (alive) for (let i = foods.length; i < foodCount(); i++) spawnFood();
 }).catch(() => toast('Не удалось загрузить знаки'));
 const signName = k => (CATALOG.find(s => s.k === k) || {}).n || 'Знак ' + k;
 // [номер знака (регулярка), эффект]. Без эффекта знак даёт +1 очко и удлиняет змейку.
@@ -848,6 +1002,10 @@ const headMarker = new maplibregl.Marker({ element: headEl, rotationAlignment: '
 
 // ---------- состояние ----------
 let head, trail, bodyLen, speed, score, eaten = 0, queued, traffic, sinceTraffic, foods, alive, camB, bodyPieces;
+let tut = null;   // идёт обучающий заезд (см. «обучение» ниже)
+const TUT_KEY = 'routeSnakeTutorial', TUT_MUL = 3;   // обучение идёт на скорости ×3, её можно менять
+let tutSeen = false;                     // обучение уже пройдено или пропущено
+try { tutSeen = !!localStorage.getItem(TUT_KEY); } catch (e) {}
 const $ = id => document.getElementById(id);
 
 function pickTraffic() {
@@ -917,8 +1075,9 @@ function pickExit(at, came, curB, q) {
 // На любом Т-перекрёстке заказ всё равно срабатывает: там прямо ехать некуда.
 const queueAt = (at, came) => queuedFor < 0 || at === queuedFor || isForcedJunction(at, came) ? queued : null;
 function chooseNext(at, came, curB) {
-  const r = pickExit(at, came, curB, queueAt(at, came));
+  const q = queueAt(at, came), r = pickExit(at, came, curB, q);
   if (r.used) { setQueued(null); SFX.turn(); }
+  if (tut) tutOnNode(at, came, r.n, r.used, q);
   return r.n;
 }
 
@@ -956,7 +1115,7 @@ function advance(move) {
     move -= rem; odo += rem;
     if (queued && odo - queuedAt > Math.max(QUEUE_TTL, curV * 6)) setQueued(null);   // не меньше 6 секунд
     // Т-образный перекрёсток, а поворот не выбран: змейка «едет прямо» в стену — минус жизнь
-    if (!queued && odo - lifeLostAt > 80 && isForcedJunction(head.to, head.from)) {   // 80 м после потери — без второй потери подряд
+    if (!queued && !tut && odo - lifeLostAt > 80 && isForcedJunction(head.to, head.from)) {   // 80 м после потери — без второй потери подряд
       loseLife('Не выбран поворот');
       if (!alive) return;
     }
@@ -1060,7 +1219,7 @@ function hitSelf(hp) {
 
 // ---------- еда: знаки на узлах графа ----------
 function spawnFood() {
-  if (!CATALOG.length) return;
+  if (!CATALOG.length || tut) return;
   const hp = head ? headPos() : [0, 0];
   const near = nodesNear(hp, 550);
   const pdd = gameMode === 'pdd', minHead = pdd ? 250 : 150, gap = pdd ? 320 : 180;   // в ПДД каждый знак — вопрос, их меньше
@@ -1071,9 +1230,16 @@ function spawnFood() {
   const groups = Object.keys(BY_GROUP), g = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
   // каждый пятый знак — из тех, что укорачивают хвост, иначе среди 358 знаков они почти не попадаются
   const shrinkers = CATALOG.filter(x => SHRINK_SIGNS.includes(x.k));
-  const sign = gameMode === 'pdd' ? pickQuizSign()
-    : shrinkers.length && Math.random() < .2 ? shrinkers[Math.floor(Math.random() * shrinkers.length)]
+  // кривая сложности: первые 40 секунд вредных и хитрых знаков нет совсем, потом их доля плавно растёт
+  // до обычной к третьей минуте (вместе с этим растёт и скорость — см. rampK)
+  const calm = Math.max(0, Math.min(1, (gameTime - 40000) / 140000));
+  let sign = gameMode === 'pdd' ? pickQuizSign()
+    : shrinkers.length && Math.random() < .2 * calm ? shrinkers[Math.floor(Math.random() * shrinkers.length)]
     : g[Math.floor(Math.random() * g.length)];
+  for (let t = 0; gameMode !== 'pdd' && t < 20 && isTricky(sign.k) && Math.random() > calm; t++) {
+    const g2 = BY_GROUP[groups[Math.floor(Math.random() * groups.length)]];
+    sign = g2[Math.floor(Math.random() * g2.length)];
+  }
   const el = document.createElement('div');
   el.className = 'sign'; el.title = sign.k + ' ' + sign.n;
   el.innerHTML = `<img src="signs/${sign.k}.svg" alt="${esc(sign.n)}" draggable="false">`;
@@ -1083,6 +1249,7 @@ function spawnFood() {
 function checkFood(hp) {
   for (let j = foods.length - 1; j >= 0; j--) {
     const f = foods[j], d = dist(P[f.i], hp);
+    if (f.tut) { if (d < EAT) { f.m.remove(); foods.splice(j, 1); tutAte(f); } continue; }
     if (d < EAT) {
       f.m.remove(); foods.splice(j, 1);
       eaten++; speed = Math.min(MAX_SPEED, speed + 1.2); addLiters(1);
@@ -1097,7 +1264,15 @@ function checkFood(hp) {
 let AC, master, pad, muted = false, nextBeat = 0, beat = 0;
 try { muted = localStorage.getItem('routeSnakeMute') === '1'; } catch (e) {}
 // мягкая фоновая музыка: тихий аккорд-подложка + редкие «колокольчики» (Am – F – C – G)
-const CHORDS = [[220, 261.63, 329.63], [174.61, 220, 261.63], [196, 261.63, 329.63], [196, 246.94, 293.66]];
+// мелодии фоновой музыки: строка «Мелодия» в меню переключает по кругу (как в Roblox-версии)
+const MELODIES = [
+  { name: 'Спокойная', step: .5, chords: [[220, 261.63, 329.63], [174.61, 220, 261.63], [196, 261.63, 329.63], [196, 246.94, 293.66]] },   // Am – F – C – G
+  { name: 'Бодрая', step: .32, chords: [[261.63, 329.63, 392], [196, 246.94, 293.66], [220, 261.63, 329.63], [174.61, 220, 261.63]] },    // C – G – Am – F
+  { name: 'Ночная', step: .7, chords: [[146.83, 174.61, 220], [233.08, 293.66, 349.23], [174.61, 220, 261.63], [261.63, 329.63, 392]] },   // Dm – B♭ – F – C
+];
+let melody = 0, musicOn = true;
+try { melody = Math.min(MELODIES.length - 1, Math.max(0, +localStorage.getItem('routeSnakeMelody') || 0)); musicOn = localStorage.getItem('routeSnakeMusic') !== '0'; } catch (e) {}
+const padLevel = () => musicOn ? .035 : 0;
 // iPhone глушит WebAudio переключателем «без звука», пока не играет обычный <audio>:
 // запускаем бесконечную тишину, и звук игры идёт как у видео
 let silentEl;
@@ -1124,7 +1299,7 @@ function audioInit() {
   f.connect(g).connect(master);
   const lfo = AC.createOscillator(), lg = AC.createGain();   // медленное «дыхание» громкости
   lfo.frequency.value = .12; lg.gain.value = .01; lfo.connect(lg).connect(g.gain); lfo.start();
-  const oscs = CHORDS[0].map(fr => { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = fr; o.connect(f); o.start(); return o; });
+  const oscs = MELODIES[melody].chords[0].map(fr => { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = fr; o.connect(f); o.start(); return o; });
   pad = { g, oscs };
 }
 function tone(freq, dur, { type = 'square', vol = .2, to = 0, delay = 0 } = {}) {
@@ -1136,13 +1311,14 @@ function tone(freq, dur, { type = 'square', vol = .2, to = 0, delay = 0 } = {}) 
   o.connect(g).connect(master); o.start(t); o.stop(t + dur + .02);
 }
 function music() {
-  if (!AC || !pad || !alive || paused) return;
+  if (!AC || !pad || !alive || paused || !musicOn) return;
+  const { chords: CHORDS, step } = MELODIES[melody];
   if (nextBeat < AC.currentTime) nextBeat = AC.currentTime + .05;
   while (nextBeat < AC.currentTime + .2) {           // ноты планируем чуть вперёд, чтобы ритм не «плыл»
     const ch = CHORDS[Math.floor(beat / 8) % CHORDS.length];
     if (beat % 8 === 0) pad.oscs.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], nextBeat, .4));
     if (beat % 2 === 0 || Math.random() < .3) tone(ch[[0, 1, 2, 1][beat % 4]] * 2, 1.1, { type: 'sine', vol: .045, delay: nextBeat - AC.currentTime });
-    nextBeat += .5; beat++;
+    nextBeat += step; beat++;
   }
 }
 const SFX = {
@@ -1180,6 +1356,8 @@ function toast(text, ms = 1400, danger = false) {
 }
 function setMul(i, show) {
   mulIdx = Math.max(0, Math.min(MULS.length - 1, i));
+  if (typeof tut !== 'undefined' && tut && tut.mulSet) tut.mulTouched = true;   // игрок сам поменял скорость в обучении
+  if ($('speedVal')) $('speedVal').textContent = '×' + MULS[mulIdx];
   $('mul').textContent = '×' + MULS[mulIdx];
   try { localStorage.setItem('routeSnakeMul', MULS[mulIdx]); } catch (e) {}
   if (show) toast('Скорость ×' + MULS[mulIdx]);
@@ -1319,6 +1497,8 @@ function findTurn(pts, cum) {
 function updateNav(hp) {
   if (!nav || !map.getSource('nav')) return;
   if (dist(hp, P[nav.node]) < 22) {
+    if (nav.key === 'tut') { score += 5; SFX.arrive(); celebrate(NODES[nav.node]); const m = nav.marker; m.getElement().classList.add('done');
+      nav.marker = { remove() {} }; setTimeout(() => m.remove(), 2200); setNav(null); tutDone(); return; }
     track('route_arrive', { place: nav.key });
     score += 5; addLiters(10); SFX.arrive(); toast(ARRIVED[nav.key] + '! +5 очков');
     say('Вы приехали', false);
@@ -1513,6 +1693,7 @@ function renderLives() {
 }
 renderLives();
 function loseLife(reason) {
+  if (tut) { lifeLostAt = odo; return; }   // в обучении жизни не тратятся
   lives--; lifeLostAt = odo;
   renderLives();
   $('lives').classList.remove('hit'); void $('lives').offsetWidth; $('lives').classList.add('hit');
@@ -1566,6 +1747,7 @@ function steer(k) {
   if (!alive || paused || quiz || held) return;
   if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
   let target = askShown ? askTarget : -1;
+  if (tut && tut.gate) target = tut.gate.n;          // в обучении нажатие относится к подсвеченному перекрёстку
   // мигает предупреждение о дальнем Т-перекрёстке, а прямо перед носом перекрёсток со съездом в эту сторону:
   // игрок жмёт именно на него. На большой скорости предупреждение горит заранее и раньше «забирало» такие нажатия
   if (target >= 0 && k !== 'S') { const near = nearTurnJunction(k, Math.max(60, curV * 1.2), target); if (near >= 0) target = near; }
@@ -1598,7 +1780,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') setZoom(zoomLvl - .5);
   if (e.code === 'BracketRight' || e.code === 'PageUp') setMul(mulIdx + 1, true);
   if (e.code === 'BracketLeft' || e.code === 'PageDown') setMul(mulIdx - 1, true);
-  if ((e.code === 'Space' || e.code === 'Enter') && !alive) { e.preventDefault(); start(); }
+  if ((e.code === 'Space' || e.code === 'Enter') && !alive) { e.preventDefault(); $('tutDone').classList.contains('hidden') ? play() : start(); }
 });
 document.querySelectorAll('.pad button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); steer(b.dataset.k); }));
 // после звонка или сворачивания телефон приостанавливает звук — будим на любом касании
@@ -1720,11 +1902,12 @@ function setPaused(p) {
   if (!alive) p = false;
   paused = p;
   if (quiz) $('quiz').classList.toggle('hidden', p);   // на паузе вопрос прячем, таймер стоит
-  if (pad && AC) pad.g.gain.setTargetAtTime(p || !alive ? 0 : .035, AC.currentTime, .2);
+  if (pad && AC) pad.g.gain.setTargetAtTime(p || !alive ? 0 : padLevel(), AC.currentTime, .2);
   if (p) { syncMenu(); showPage('menu'); track('pause'); } else closePanel();
 }
 function syncMenu() {
-  $('speedRange').value = MULS[mulIdx]; $('speedVal').textContent = '×' + MULS[mulIdx];
+  $('speedVal').textContent = '×' + MULS[mulIdx];
+  $('swipeToggle').checked = swipeOnly; $('hudToggle').checked = hudHidden; $('musicToggle').checked = musicOn; $('melodyName').textContent = MELODIES[melody].name;
   $('soundToggle').checked = !muted; $('voiceToggle').checked = voiceOn; $('voiceSel').value = voiceKind; $('hintToggle').checked = hintOn; $('themeToggle').checked = theme === 'dark'; $('menuName').value = nick;
   $('fullLabel').textContent = document.fullscreenElement ? 'Обычный экран' : 'Во весь экран';
 }
@@ -1732,12 +1915,39 @@ $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); audioInit(
 $('resume').onclick = $('resumeRow').onclick = () => { closePanel(); setPaused(false); };
 $('restart').onclick = () => { closePanel(); closeOverlay('over'); start(); };
 // ползунок по целым скоростям ×1…×10
-$('speedRange').addEventListener('input', e => {
-  const v = +e.target.value;
-  setMul(MULS.reduce((bi, m, i) => Math.abs(m - v) < Math.abs(MULS[bi] - v) ? i : bi, 0), false);
-  $('speedVal').textContent = '×' + MULS[mulIdx];
-});
-$('speedRange').addEventListener('change', e => { e.target.value = MULS[mulIdx]; });
+// скорость в меню: − ×N + (как в Roblox-версии)
+$('speedMinus').onclick = () => setMul(mulIdx - 1, false);
+$('speedPlus').onclick = () => setMul(mulIdx + 1, false);
+// «Управление свайпами»: кнопки поворота прячутся, рулим свайпами (и стрелками на клавиатуре)
+let swipeOnly = false, hudHidden = false;
+try { swipeOnly = localStorage.getItem('routeSnakeControl') === 'swipe'; hudHidden = localStorage.getItem('routeSnakeHideHud') === '1'; } catch (e) {}
+function setSwipeOnly(on) {
+  swipeOnly = on; document.body.classList.toggle('swipeonly', on); $('swipeToggle').checked = on;
+  try { localStorage.setItem('routeSnakeControl', on ? 'swipe' : 'buttons'); } catch (e) {}
+}
+// «Скрыть интерфейс»: остаются кнопка меню и кнопки поворота
+function setHudHidden(on) {
+  hudHidden = on; document.body.classList.toggle('nohud', on); $('hudToggle').checked = on;
+  try { localStorage.setItem('routeSnakeHideHud', on ? '1' : '0'); } catch (e) {}
+}
+setSwipeOnly(swipeOnly); setHudHidden(hudHidden);
+$('swipeToggle').addEventListener('change', e => { setSwipeOnly(e.target.checked); track('control', { swipe: e.target.checked ? 1 : 0 }); });
+$('hudToggle').addEventListener('change', e => setHudHidden(e.target.checked));
+function setMusic(on) {
+  musicOn = on; $('musicToggle').checked = on;
+  try { localStorage.setItem('routeSnakeMusic', on ? '1' : '0'); } catch (e) {}
+  if (pad && AC) pad.g.gain.setTargetAtTime(alive && !paused ? padLevel() : 0, AC.currentTime, .2);
+}
+$('musicToggle').addEventListener('change', e => { audioInit(); setMusic(e.target.checked); });
+$('melodyRow').onclick = e => {
+  e.currentTarget.blur(); audioInit();
+  melody = (melody + 1) % MELODIES.length; beat = 0;
+  try { localStorage.setItem('routeSnakeMelody', melody); } catch (er) {}
+  $('melodyName').textContent = MELODIES[melody].name;
+  if (!musicOn) setMusic(true);
+  // короткий образец мелодии, даже на паузе
+  if (AC && !muted) MELODIES[melody].chords.forEach((ch, i) => tone(ch[0] * 2, .5, { type: 'sine', vol: .08, delay: i * MELODIES[melody].step }));
+};
 $('soundToggle').addEventListener('change', e => { audioInit(); setMuted(!e.target.checked); });
 $('hintToggle').addEventListener('change', e => setHint(e.target.checked, false));
 $('voiceToggle').addEventListener('change', e => setVoice(e.target.checked));
@@ -2240,7 +2450,7 @@ function revive(paid) {
   lives = Math.max(lives, 1); bricks = 0; lifeLostAt = odo; renderLives(); applySkin();
   fx = [{ kind: 'shield', until: gameTime + 3000, k: '7.1' }];
   closeOverlay('over'); $('reviveBox').classList.add('hidden');
-  if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .5);
+  if (pad) pad.g.gain.setTargetAtTime(padLevel(), AC.currentTime, .5);
   track('revive', { paid: paid ? 1 : 0 });
   toast('Запаска на месте, 3 секунды щита');
 }
@@ -2311,7 +2521,7 @@ function selfEatStep(now) {
 const LIFE_COUNT = 1, LIFE_PAUSE = 25000;
 let hearts = [], nextLifeAt = 0;
 function spawnLife() {
-  if (!head || !P.length) return;
+  if (!head || !P.length || tut) return;
   const hp = headPos(), near = nodesNear(hp, 1100);
   let i, tries = 0;
   do { i = near.length ? near[Math.floor(Math.random() * near.length)] : Math.floor(Math.random() * P.length); tries++; }
@@ -2346,6 +2556,21 @@ const MODE_NOTE = {
   classic: 'Знаки сразу дают очки и свой эффект',
   pdd: 'Съел знак — выбери его название за 15 секунд. Верно: +2 очка и эффект знака, ошибка — минус жизнь',
 };
+const MODES = ['classic', 'pdd'], MODE_NAME = { classic: 'Классический', pdd: 'ПДД' };
+const MODE_SUB = { classic: 'Знаки сразу дают очки и свой эффект', pdd: 'За каждый знак — вопрос: верно +2 очка' };
+const ICO = {
+  sign: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5L21 19H3z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".4"/></svg>',
+  snake: '<svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>',
+  home: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20h-5v-5h-6v5H4z"/></svg>',
+  quiz: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3L21.5 19.5H2.5z"/><path d="M10 11a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3"/><circle cx="12" cy="16.6" r=".4"/></svg>',
+  plus: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  cross: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  turn: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></svg>',
+};
+const MODE_TIPS = {
+  classic: [[ICO.sign, 'Собирай знаки — змейка растёт'], [ICO.snake, 'Не врезайся в свой хвост'], [ICO.home, 'Доедь «Домой» или «На работу» — +5 очков']],
+  pdd: [[ICO.quiz, 'Съел знак — выбери его название за 15 секунд'], [ICO.plus, 'Верно — +2 очка и эффект знака'], [ICO.cross, 'Ошибка — минус жизнь']],
+};
 let gameMode = 'classic', quiz = null, quizAsked = 0, quizRight = 0, runStartMode = 'classic', modeSwitched = false;
 // в таблицу ПДД попадает только заезд, целиком сыгранный в режиме ПДД
 const runMode = () => runStartMode === 'pdd' && !modeSwitched ? 'pdd' : 'classic';
@@ -2355,19 +2580,29 @@ function setMode(m) {
   gameMode = m;
   try { localStorage.setItem('routeSnakeMode', m); } catch (e) {}
   document.querySelectorAll('.modepick .tab').forEach(t => t.classList.toggle('on', t.dataset.mode === m));
-  $('modeNote').textContent = MODE_NOTE[m];
   $('modeBtn').classList.toggle('on', m === 'pdd');
+  document.querySelectorAll('.msel').forEach(el => {
+    el.querySelector('.mn').textContent = MODE_NAME[m];
+    el.querySelector('.ms').textContent = MODE_SUB[m];
+    el.querySelector('.mdots').innerHTML = MODES.map(x => `<i class="${x === m ? 'on' : ''}"></i>`).join('');
+  });
+  // инструкция режима в стартовом окне: 3 строки с иконками (как в Roblox)
+  $('modeTips').innerHTML = MODE_TIPS[m].map(([ico, t]) => `<div class="tip"><div class="pico">${ico}</div>${t}</div>`).join('');
 }
+document.querySelectorAll('.msel .mstep').forEach(b => b.addEventListener('click', e => {
+  e.currentTarget.blur();
+  switchMode(MODES[(MODES.indexOf(gameMode) + MODES.length + +b.dataset.step) % MODES.length]);
+}));
 function switchMode(m) {
   if (m === gameMode) return;
   setMode(m);
   track('mode', { mode: m });
-  if (!alive) return;
+  if (!alive || tut) return;
   modeSwitched = true;
   toast(m === 'pdd' ? 'Режим ПДД: за каждый знак — вопрос' : 'Классический режим');
   // знаки на карте ставим заново, чтобы в режиме ПДД они не повторялись
   foods.forEach(f => f.m.remove()); foods = [];
-  while (foods.length < foodCount()) spawnFood();
+  for (let i = 0; i < foodCount(); i++) spawnFood();
 }
 document.querySelectorAll('.modepick').forEach(el => el.addEventListener('click', e => {
   const t = e.target.closest('[data-mode]');
@@ -2444,8 +2679,10 @@ function frame(now) {
   if (eating) selfEatStep(now);
   if (alive && !paused && !quiz && !held && !eating && now > freezeUntil && map.getSource('body')) {
     gameTime += dt * 1000;
-    const v = speed * MULS[mulIdx] * speedFactor();
-    curV = Math.max(v, speed * MULS[mulIdx]);
+    // обучение — медленно и ровно; обычный заезд разгоняется плавно (rampK)
+    const base = tut ? speed * MULS[mulIdx] : speed * MULS[mulIdx] * rampK();
+    const v = base * speedFactor() * (tut ? tutGateK(headPos()) : 1);
+    curV = Math.max(v, base);
     // на больших скоростях голова за кадр проходит 20+ м: двигаем мелкими шагами,
     // чтобы не проскочить знак или собственное тело
     let move = v * dt, bodyGeo;
@@ -2460,6 +2697,7 @@ function frame(now) {
       if (!alive || quiz || eating) break;
       // въехал в свой хвост — минус жизнь и 2 секунды щита, чтобы выехать
       if (hitSelf(p)) {
+        if (tut) { biteFx(p); tutBite(); fx.push({ kind: 'shield', until: gameTime + 2000, k: '7.1' }); if (move <= 0) break; continue; }
         if (lives <= 1) { startSelfEat(); break; }   // последняя жизнь: долгая анимация, потом авария
         biteFx(p);
         loseLife('Укусил свой хвост');
@@ -2471,6 +2709,7 @@ function frame(now) {
     if (!alive) { requestAnimationFrame(frame); return; }
     if (Math.floor((odo - odo0) / 1000) > kmPaid) { kmPaid++; addLiters(5); }
     renderFx();
+    if (tut) tutFrame();
     const hp = headPos(), b = brg(head.from, head.to);
     map.getSource('body').setData(bodyGeo);
     if (hintOn) map.getSource('preview').setData(previewGeo(hp));
@@ -2481,32 +2720,36 @@ function frame(now) {
     const ll = toLL(hp[0], hp[1]);
     headMarker.setLngLat(ll).setRotation(b);
     const z = map.getZoom();
-    map.jumpTo({ center: ll, bearing: camB, zoom: z + (zoomLvl - z) * Math.min(1, dt * 8) });
+    const zl = tut && tut.zoom ? Math.min(zoomLvl, tut.zoom) : zoomLvl;
+    map.jumpTo({ center: ll, bearing: camB, zoom: z + (zl - z) * Math.min(1, dt * (tut && tut.zoom ? 2 : 8)) });
     drawNeck();
     $('score').textContent = score; $('len').textContent = Math.round(bodyLen); $('eaten').textContent = eaten;
   }
   requestAnimationFrame(frame);
 }
-function start() {
+function start(tutorial = false) {
   if (document.activeElement) document.activeElement.blur(); // иначе пробел/стрелки «нажимают» кнопку
   if (!runFinished) finishRun();          // ушли со страницы аварии, не выбрав запаску
   eating = null;
+  tutStop();
+  if (tutorial === true) tutBegin();
   reset(); alive = true; paused = false;
   quiz = null; closeOverlay('quiz'); askedNames.clear(); quizAsked = quizRight = 0; runStartMode = gameMode; modeSwitched = false;
   runLiters = 0; kmPaid = 0; odo0 = odo; revivedThisRun = false; runFinished = true;
   $('earned').textContent = ''; $('reviveBox').classList.add('hidden');
-  ['start', 'over'].forEach(closeOverlay); closePanel();
+  ['start', 'over', 'tutDone'].forEach(closeOverlay); closePanel();
   $('rank').textContent = ''; $('codeNote').textContent = '';
   audioInit(); SFX.start();
   held = false;
   if (window.speechSynthesis && voiceOn) try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
   if (nav) { nav.announced = false; navDirty = true; }
-  track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx], mode: gameMode });
-  if (pad) pad.g.gain.setTargetAtTime(.035, AC.currentTime, .8);
+  if (tut) { hideChips(); tutNext(); } else { track('game_start', { signed_in: fbUser ? 1 : 0, speed: MULS[mulIdx], mode: gameMode }); playTips(gameMode); }
+  if (pad) pad.g.gain.setTargetAtTime(padLevel(), AC.currentTime, .8);
 }
 function gameOver(reason = 'Авария!') {
   if (!alive) return;                     // столкновение и знак в одном шаге — авария одна
   alive = false;
+  hideChips();
   $('overTitle').textContent = reason;
   SFX.crash();
   track('game_over', { score, eaten, length: Math.round(bodyLen), seconds: Math.round(gameTime / 1000), reason: bricks >= BRICKS_MAX ? 'bricks' : 'crash' });
@@ -2520,6 +2763,295 @@ function gameOver(reason = 'Авария!') {
   if (canRevive()) { showRevive(); $('nameBox').classList.add('hidden'); } else finishRun();
   $('over').classList.remove('hidden');
 }
+// ---------- обучение: короткий медленный заезд, где каждое правило игрок пробует сам ----------
+// Шаги: поверни → съешь знак → объедь вредный знак → не укуси хвост → доедь до финиша.
+// Шаг засчитывается, только когда игрок сделал действие. Перед нужным перекрёстком змейка
+// притормаживает и ждёт нажатия, жизни не тратятся. Пройденное запоминается в localStorage.
+function tutMark(how) { tutSeen = true; try { localStorage.setItem(TUT_KEY, how); } catch (e) {} renderStart(); }
+function play() { tutSeen ? start() : start(true); }
+// кривая сложности обычного заезда: за первые 2 минуты скорость плавно растёт с 65 % до 100 %
+const rampK = () => Math.min(1, .65 + .35 * gameTime / 120000);
+// знаки, которые новичку мешают: штрафы, стоп, «наоборот», принудительный поворот
+const TRICKY = /^(2\.5|1\.25|3\.1|3\.2|7\.1[23]|1\.15|4\.1\.[23]|1\.32)$/;
+const isTricky = k => TRICKY.test(k);
+
+const TUT_STEPS = ['turn', 'eat', 'avoid', 'tail', 'finish'];
+const svgIco = inner => `<svg class="ico" viewBox="0 0 24 24">${inner}</svg>`;
+const TUT_ICO = {
+  both: svgIco('<path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/>'),
+  ok: svgIco('<path d="M5 12.5l4.5 4.5L19 7.5" stroke="#26a541" stroke-width="3"/>'),
+  tail: svgIco('<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/>'),
+  flag: svgIco('<path d="M6 21V4h11l-2 3.5 2 3.5H6"/>'),
+};
+const DIR_WORD = { L: 'налево', R: 'направо' };
+
+function tutBegin() {
+  tut = { i: -1, gate: null, ring: null, sign: null, tailM: null, turns: 0, lastBite: -1e9, check: 0, tries: 0, busy: false, prevNav: nav ? nav.key : null, prevMul: mulIdx };
+  setMul(MULS.indexOf(TUT_MUL), false); tut.mulSet = true;
+  if (nav) setNav(null);
+  document.body.classList.add('tutoring');
+  track('tutorial_start');
+}
+function tutClearStep() {
+  if (!tut) return;
+  if (tut.ring) tut.ring.remove();
+  if (tut.tailM) tut.tailM.remove();
+  if (tut.sign) { tut.sign.m.remove(); foods = foods.filter(f => f !== tut.sign); }
+  tut.gate = tut.ring = tut.sign = tut.tailM = null; tut.tailOn = false;
+  document.querySelectorAll('.pad button').forEach(b => b.classList.remove('tglow'));
+  $('coach').classList.remove('swipeL', 'swipeR');
+}
+function tutStop() {
+  if (!tut) return;
+  tutClearStep();
+  if (nav && nav.key === 'tut') { nav.marker.remove(); nav = null; if (map.getSource('nav')) map.getSource('nav').setData(empty()); $('navbar').classList.add('hidden'); document.body.classList.remove('navon'); }
+  $('coach').classList.add('hidden');
+  document.body.classList.remove('tutoring');
+  const back = tut.prevNav;
+  if (!tut.mulTouched) setMul(tut.prevMul, false);   // скорость обучения не трогали — возвращаем свою
+  tut = null;
+  if (back && places[back]) setNav(back);
+}
+function coach(title, sub, ico, { ok = false, bad = false } = {}) {
+  const c = $('coach');
+  $('coachTitle').textContent = title; $('coachSub').textContent = sub || '';
+  $('coachIco').innerHTML = ico;
+  $('coachBad').classList.toggle('hidden', !bad);
+  $('coachDots').innerHTML = TUT_STEPS.map((_, j) => `<i class="${j < tut.i || (ok && j === tut.i) ? 'done' : j === tut.i ? 'on' : ''}"></i>`).join('');
+  c.classList.toggle('ok', ok);
+  c.classList.remove('hidden', 'pop'); void c.offsetWidth; c.classList.add('pop');
+}
+function glow(dirs) {
+  document.querySelectorAll('.pad button').forEach(b => b.classList.toggle('tglow', dirs.includes(b.dataset.k)));
+  $('coach').classList.remove('swipeL', 'swipeR');
+  if ((coarse || swipeOnly) && dirs.length) $('coach').classList.add(dirs.includes('R') ? 'swipeR' : 'swipeL');
+}
+// узлы впереди по тому пути, которым змейка поедет сама (с учётом уже нажатого поворота)
+function tutPath(maxD) {
+  const out = [];
+  let from = head.from, to = head.to, d = dist(headPos(), P[to]), used = false;
+  for (let i = 0; i < 300 && d < maxD; i++) {
+    out.push({ n: to, from, d });
+    const r = pickExit(to, from, 0, used ? null : queueAt(to, from));
+    if (r.used) used = true;
+    if (r.n === from) break;
+    from = to; to = r.n; d += dist(P[from], P[to]);
+  }
+  return out;
+}
+// ближайший перекрёсток не ближе minD, где можно повернуть; avoid — нужен съезд мимо «прямо»
+function tutJunction(minD, avoid, need) {
+  for (const o of tutPath(800)) {
+    if (o.d < minD || ADJ[o.n].length < 3) continue;
+    const straight = pickExit(o.n, o.from, 0, null).n;
+    const dirs = ['L', 'R'].filter(k => { const r = pickExit(o.n, o.from, 0, k); return r.used && (!avoid || r.n !== straight); });
+    if (!dirs.length || need && !dirs.includes(need)) continue;
+    if (avoid) {                          // вредный знак ставим на дорогу «прямо», в 25–120 м за перекрёстком
+      let from = o.n, to = straight, d = dist(P[from], P[to]);
+      while (d < 25 && ADJ[to].length === 2) { const nx = ADJ[to][0] === from ? ADJ[to][1] : ADJ[to][0]; from = to; to = nx; d += dist(P[from], P[to]); }
+      if (dist(P[o.n], P[to]) < 22 || d > 120) continue;
+      o.bad = to;
+    }
+    return { ...o, dirs, straight };
+  }
+  return null;
+}
+function tutRing(n) {
+  const el = document.createElement('div'); el.className = 'tring';
+  return new maplibregl.Marker({ element: el }).setLngLat(NODES[n]).addTo(map);
+}
+function tutSign(i, k, label, bad) {
+  const el = document.createElement('div');
+  el.className = 'sign ' + (bad ? 'tbad' : 'tgood');
+  el.innerHTML = `<img src="signs/${k}.svg" alt="" draggable="false"><div class="tlabel${bad ? ' red' : ''}">${label}</div>`;
+  const f = { i, k, tut: bad ? 'bad' : 'good', m: new maplibregl.Marker({ element: el }).setLngLat(NODES[i]).addTo(map) };
+  foods.push(f);
+  return f;
+}
+const turnSub = () => (coarse ? 'Свайп по экрану' : 'Стрелка на клавиатуре') + (swipeOnly ? '' : ' или кнопка внизу');
+function setGate(g, ok) {
+  tut.gate = { n: g.n, from: g.from, straight: g.straight, ok };
+  tut.ring = tutRing(g.n);
+}
+// готовим текущий шаг; если впереди нет подходящего места — пробуем снова через полсекунды
+function tutSetup() {
+  tutClearStep();
+  const step = TUT_STEPS[tut.i], hard = ++tut.tries > 12;   // долго не находим перекрёсток — шаг без остановки
+  if (step === 'turn' || step === 'tail') {
+    const need = step === 'tail' ? tut.tailDir : null;   // хвост: оба поворота в одну сторону — змейка вернётся к своему хвосту
+    const g = tutJunction(step === 'turn' ? 70 : 45, false, need);
+    if (!g && !hard) return false;
+    const dirs = !g ? ['L', 'R'] : need ? [need] : g.dirs;
+    if (g) setGate(g, q => dirs.includes(q) && pickExit(g.n, g.from, 0, q).used);
+    glow(dirs);
+    if (step === 'turn') coach(dirs.length > 1 ? 'Поверни на перекрёстке' : 'Поверни ' + DIR_WORD[dirs[0]], turnSub(), dirs.length > 1 ? TUT_ICO.both : svgIco(TURN_ICON[dirs[0]]));
+    else {
+      bodyLen = Math.max(bodyLen, 320);
+      const el = document.createElement('div'); el.className = 'ttail'; el.innerHTML = '<div class="tlabel blue">Хвост</div>';
+      tut.tailM = new maplibregl.Marker({ element: el });
+      tut.zoom = 15.3;                    // отдаляем камеру, чтобы хвост был виден
+      coach('Не кусай свой хвост', tut.turns ? `Ещё раз ${DIR_WORD[need]} — смотри, где хвост` : 'Змейка выросла. Поверни 2 раза в одну сторону', TUT_ICO.tail);
+    }
+  } else if (step === 'eat') {
+    const path = tutPath(400), o = path.find(o => o.d > 90 && o.d < 200 && ADJ[o.n].length === 2) || path.find(o => o.d > 90);
+    if (!o) return false;
+    tut.sign = tutSign(o.n, '2.1', 'Съешь!', false);
+    coach('Съешь знак', 'Проедь через него — знаки дают очки', '<img src="signs/2.1.svg" alt="">');
+  } else if (step === 'avoid') {
+    const g = tutJunction(90, true);
+    if (!g) {
+      if (!hard) return false;
+      const o = tutPath(400).find(o => o.d > 120);    // без перекрёстка: просто покажем знак, засчитаем любой объезд
+      if (!o) return false;
+      tut.sign = tutSign(o.n, '3.1', 'Объезжай!', true);
+      glow(['L', 'R']);
+    } else {
+      setGate(g, q => pickExit(g.n, g.from, 0, q).n !== g.straight);
+      tut.sign = tutSign(g.bad, '3.1', 'Объезжай!', true);
+      glow(g.dirs);
+    }
+    coach('Объезжай вредные знаки', 'Они отнимают жизнь или очки. Поверни!', '<img src="signs/3.1.svg" alt="">', { bad: true });
+  } else if (step === 'finish') {
+    const hp = headPos(), cand = shuffle(nodesNear(hp, 500).filter(n => { const d = dist(P[n], hp); return d > 220 && d < 450; }));
+    let best = null;
+    for (const n of cand.slice(0, 40)) {
+      const r = shortestPath(head.to, n, head.from);
+      if (r && r.len > 280 && r.len < 550) { best = n; break; }
+    }
+    if (best === null) return false;
+    nav = { key: 'tut', node: best, marker: new maplibregl.Marker({ element: archEl(), anchor: 'bottom' }).setLngLat(NODES[best]).addTo(map),
+            path: [], cum: [], len: 0, turn: null, lastSay: -1e9, said: 0, announced: false, coords: [] };
+    navDirty = true;
+    document.body.classList.add('navon'); $('navbar').classList.remove('hidden');
+    coach('Доедь до финиша', 'Следуй по фиолетовой линии', TUT_ICO.flag);
+  }
+  tut.tries = 0;
+  return true;
+}
+function tutNext() {
+  if (!tut) return;
+  tut.i++; tut.busy = false; tut.turns = 0; tut.tries = 0;
+  if (tut.i >= TUT_STEPS.length) return;
+  tut.ready = tutSetup();
+}
+function tutSuccess(text = 'Отлично!') {
+  if (!tut || tut.busy) return;
+  const t = tut;
+  t.busy = true;
+  track('tutorial_step', { step: TUT_STEPS[t.i] });
+  tutClearStep();
+  SFX.eat(3);
+  coach(text, '', TUT_ICO.ok, { ok: true });
+  setTimeout(() => { if (tut === t && alive) tutNext(); }, 1200);
+}
+// на каждом узле: засчитываем повороты и объезд
+function tutOnNode(at, came, next, used, q) {
+  if (!tut || tut.busy || !tut.ready) return;
+  const step = TUT_STEPS[tut.i], g = tut.gate;
+  if (step === 'turn' && used) tutSuccess('Есть поворот!');
+  else if (step === 'avoid') {
+    if (g && at === g.n && next !== g.straight) tutSuccess('Объехал!');
+    else if (used && (!g || at !== g.n)) tutSuccess('Объехал!');
+  } else if (step === 'tail' && used) {
+    tut.tailDir = tut.tailDir || q;
+    if (++tut.turns >= 2) { tut.zoom = 0; tutSuccess('Хвост цел!'); }
+    else tut.ready = tutSetup();
+  }
+}
+function tutAte(f) {
+  if (!tut) return;
+  tut.sign = null;
+  if (f.tut === 'good') { eaten++; applySign(f.k); tutSuccess('Вкусно! +3 очка'); return; }
+  SFX.slow();
+  $('hurt').classList.add('on'); setTimeout(() => $('hurt').classList.remove('on'), 120);
+  toast('Этот знак отнимает жизнь. В обучении — без потерь, попробуй ещё', 2600, true);
+  tut.ready = false; tut.check = performance.now() + 1500;   // через полторы секунды — новый знак
+}
+function tutBite() {
+  if (performance.now() - tut.lastBite < 2500) return;
+  tut.lastBite = performance.now();
+  toast('Это твой хвост! В игре укус — минус жизнь', 2400, true);
+}
+// змейка медленно подъезжает к подсвеченному перекрёстку и ждёт, пока игрок выберет поворот
+function tutGateK(hp) {
+  const g = tut.gate;
+  if (!g || tut.busy || head.to !== g.n || head.from !== g.from || (queued && g.ok(queued))) return 1;
+  const d = dist(hp, P[g.n]);
+  return d <= 16 ? 0 : Math.max(.2, Math.min(1, (d - 16) / 45));   // тормозим, но доезжаем до стоп-точки, а не ползём к ней вечно
+}
+function tutFrame() {
+  const now = performance.now(), step = TUT_STEPS[tut.i];
+  if (tut.busy || tut.i >= TUT_STEPS.length) return;
+  if (!tut.ready) { if (now > tut.check) { tut.check = now + 500; tut.ready = tutSetup(); } return; }
+  if (tut.tailM && bodyPieces && bodyPieces.length) { const b = bodyPieces[bodyPieces.length - 1][1]; tut.tailM.setLngLat(toLL(b[0], b[1])); if (!tut.tailOn) { tut.tailM.addTo(map); tut.tailOn = true; } }
+  if (step === 'finish' && nav && nav.turn) {          // на маршруте подсвечиваем кнопку ближайшего поворота
+    const turnIn = dist(headPos(), P[head.to]) + nav.cum[nav.turn.k] - (nav.cum[1] || 0);
+    glow(turnIn < 110 && !queued ? [nav.turn.dir] : []);
+  }
+  if (now < tut.check) return;
+  tut.check = now + 500;
+  // змейка ушла с пути к цели (свернула не там) — ставим цель заново впереди
+  const ahead = tutPath(800);
+  if (tut.gate && !ahead.some(o => o.n === tut.gate.n && o.from === tut.gate.from)) tut.ready = tutSetup();
+  else if (tut.sign && !tut.gate && !ahead.some(o => o.n === tut.sign.i)) {
+    if (tut.sign.tut === 'bad' && step === 'avoid') tutSuccess('Объехал!');
+    else tut.ready = tutSetup();
+  }
+}
+function tutDone() {
+  const t = tut;
+  if (!t) return;
+  t.busy = true; t.i = TUT_STEPS.length;
+  tutMark('done');
+  track('tutorial_done');
+  coach('Финиш! Обучение пройдено', '', TUT_ICO.ok, { ok: true });
+  setTimeout(() => {
+    if (tut !== t) return;
+    alive = false;
+    if (map.getSource('preview')) map.getSource('preview').setData(empty());
+    drawNeck();
+    if (pad) pad.g.gain.setTargetAtTime(0, AC.currentTime, .3);
+    tutStop();
+    $('tutResult').textContent = `Знаков: ${eaten}. Очков: ${score}. Дальше знаков будет больше, а змейка постепенно разгонится.`;
+    openOverlay('tutDone');
+  }, 1700);
+}
+$('coachSkip').onclick = e => { e.currentTarget.blur(); track('tutorial_skip', { step: tut ? TUT_STEPS[tut.i] : '' }); tutMark(tutSeen ? 'done' : 'skip'); start(); };
+$('tutPlay').onclick = () => start();
+$('menuTutorial').onclick = () => { closePanel(); closeOverlay('over'); start(true); };
+
+// ---------- плашки в начале заезда: правила режима по очереди, иконка покачивается (как в Roblox) ----------
+const CHIP_STEPS = {
+  classic: [['turn', '← → поворот на перекрёстке'], [ICO.sign, 'Собирай знаки'], [ICO.snake, 'Не кусай свой хвост']],
+  pdd: [['turn', '← → поворот на перекрёстке'], [ICO.quiz, 'Съел знак — ответь, что он значит'], [ICO.snake, 'Не кусай свой хвост']],
+};
+const SW_ICO = { L: '<svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>', R: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+  U: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>' };
+let chipToken = 0;
+function showChip(html) {
+  const c = $('gchip');
+  c.innerHTML = html; c.classList.remove('hidden', 'pop'); void c.offsetWidth; c.classList.add('pop');
+}
+function hideChips() { chipToken++; $('gchip').classList.add('hidden'); }
+function playTips(mode) {
+  const my = ++chipToken;
+  const steps = CHIP_STEPS[mode].slice();
+  if (swipeOnly) steps.splice(0, 1, ['swipeLR', 'Свайп ← → — поворот'], ['swipeUp', 'Свайп ↑ — прямо']);
+  steps.push('avoid');
+  let i = 0;
+  const next = () => {
+    if (my !== chipToken) return;
+    if (i >= steps.length || !alive || tut) { hideChips(); return; }
+    const st = steps[i++];
+    if (st === 'avoid') showChip(['2.5', '1.25', '3.1'].map(k => `<img class="gs" src="signs/${k}.svg" alt="">`).join('') + '<span>Не ешь эти знаки</span>');
+    else if (st[0] === 'swipeLR') showChip(`<div class="sw lr">${SW_ICO.L}${SW_ICO.R}</div><span>${st[1]}</span>`);
+    else if (st[0] === 'swipeUp') showChip(`<div class="sw up">${SW_ICO.U}</div><span>${st[1]}</span>`);
+    else showChip(`<div class="gi">${st[0] === 'turn' ? ICO.turn : st[0]}</div><span>${st[1]}</span>`);
+    setTimeout(next, i === steps.length ? 2800 : 2100);
+  };
+  next();
+}
+
 $('again').onclick = start;
 // стартовый экран: войти через Google или играть без входа
 function renderStart() {
@@ -2529,15 +3061,20 @@ function renderStart() {
     : `<button class="google" data-start="google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#fff" opacity=".85" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#fff" opacity=".7" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#fff" opacity=".55" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg><span>Войти через Google</span></button>
        <button class="${inSocial ? '' : 'ghost'}" id="go">${inSocial ? 'Играть' : 'Играть анонимно'}</button>
        <p class="anonNote">${inSocial ? 'Рекорды сохраняются по коду игрока — он появится после первой игры' : 'Без входа рекорды сохраняются только на этом устройстве'}</p>`;
+  // первый запуск: «Играть» начинает обучающий заезд; потом обучение можно пройти снова
+  $('startAuth').insertAdjacentHTML('beforeend', tutSeen ? '<button class="link" data-start="tut">Пройти обучение ещё раз</button>' : '<button class="link" data-start="skip">Пропустить обучение</button>');
+  $('start').classList.toggle('first', !tutSeen);
 }
 $('startAuth').addEventListener('click', async e => {
   const b = e.target.closest('button');
   if (!b) return;
-  if (b.id === 'go') return start();
+  if (b.id === 'go') return play();
+  if (b.dataset.start === 'tut') return start(true);
+  if (b.dataset.start === 'skip') { tutMark('skip'); return start(); }
   if (b.dataset.start === 'out') return signOut();
   b.disabled = true; b.querySelector('span').textContent = 'Открываю Google…';
   await signIn();
-  if (fbUser) start(); else renderStart();
+  if (fbUser) play(); else renderStart();
 });
 renderStart();
 requestAnimationFrame(t => { last = t; frame(t); });
