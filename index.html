@@ -136,7 +136,6 @@ if (inOK) {
   /* сообщения и плашки-подсказки: одно место под верхней панелью; пока видна плашка, сообщение уходит под неё */
   :root { --hintTop: calc(var(--gap) + var(--st) + var(--btn) + 14px); }
   @media (max-width: 640px) { :root { --hintTop: calc(var(--gap) + var(--st) + var(--btn) * 2 + 12px); } }   /* телефон: ниже ряда жизней */
-  body.chipon .toast { top: calc(var(--hintTop) + var(--chipH, 60px) + 8px); }
   .toast { position: absolute; top: var(--hintTop); left: 50%; transform: translateX(-50%); background: rgba(26,26,26,.85); color: #fff;
            font-size: 14px; padding: 8px 14px; border-radius: 10px; z-index: 13; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: min(90vw, 420px); width: max-content;
            text-align: center; line-height: 1.35; }
@@ -147,6 +146,8 @@ if (inOK) {
   @media (prefers-reduced-motion: reduce) { .toast.danger { animation: none; } }
   #turn { position: absolute; top: calc(var(--gap) + var(--st)); left: 50%; transform: translateX(-50%); z-index: 12; width: 56px; height: 56px; border-radius: 14px;
           background: var(--blue); box-shadow: var(--shadow); display: grid; place-items: center; opacity: 0; transition: opacity .15s; pointer-events: none; }
+  #turn .x2 { position: absolute; right: -6px; top: -6px; min-width: 22px; height: 22px; border-radius: 11px; background: #fff; color: var(--blue);
+              font-size: 12px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
   #turn .ico { stroke: #fff; width: 32px; height: 32px; stroke-width: 2.6; }
   #turn.on { opacity: 1; }
   #turn.ask { opacity: 1; background: #f29900; animation: askPulse .7s ease-in-out infinite alternate; }
@@ -158,6 +159,8 @@ if (inOK) {
                 display: grid; place-items: center; cursor: pointer; }
   .pad button:active { background: #eaf1fe; }
   .pad .ico { width: 28px; height: 28px; stroke-width: 2.4; }
+  .pad button.ubtn { width: 48px; }
+  .pad button.ubtn .ico { width: 22px; height: 22px; stroke: var(--muted); }
   .maplibregl-ctrl-bottom-right { bottom: var(--sb); right: var(--sr); }
   .overlay { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(20,24,30,.45);
              padding: calc(16px + var(--st)) calc(16px + var(--sr)) calc(16px + var(--sb)) calc(16px + var(--sl)); box-sizing: border-box; }
@@ -186,11 +189,12 @@ if (inOK) {
   .card #over .msel, #over .msel { margin: 0 0 4px; }
   [data-theme="dark"] .msel.ghost { background: #2c2d32; }
   /* плашки в начале заезда: по очереди всплывают сверху, иконка покачивается */
-  .gchip { position: absolute; left: 50%; top: var(--hintTop); transform: translateX(-50%); z-index: 12; height: 60px; box-sizing: border-box;
+  /* плашки — посередине экрана, чуть выше центра: голова змейки ниже, сообщения — вверху */
+  .gchip { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 12; height: 60px; box-sizing: border-box;
            display: flex; align-items: center; gap: 10px; padding: 0 16px 0 12px; border-radius: 16px; background: #fffbe6; border: 1.5px solid #f2d36b;
            box-shadow: var(--shadow); white-space: nowrap; font-size: 18px; font-weight: 700; color: var(--ink); pointer-events: none; max-width: calc(100% - 24px); }
   .gchip.pop { animation: chipPop .25s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes chipPop { from { transform: translateX(-50%) scale(.6); } }
+  @keyframes chipPop { from { transform: translate(-50%, -50%) scale(.6); } }
   .gchip .gi { width: 40px; height: 40px; border-radius: 8px; background: var(--card); display: grid; place-items: center; flex: none; animation: chipWob .35s ease-in-out infinite alternate; }
   .gchip .gi .ico { width: 26px; height: 26px; }
   .gchip img.gs { height: 38px; width: auto; animation: chipWob .35s ease-in-out infinite alternate; }
@@ -202,14 +206,18 @@ if (inOK) {
   .gchip .sw.lr::after { top: 13px; left: 17px; animation: swLR .7s ease-in-out infinite alternate; }
   .gchip .sw.up .ico { left: 30px; top: 2px; }
   .gchip .sw.up::after { left: 31px; top: 22px; animation: swUp .7s ease-in-out infinite; }
+  .gchip .sw.down .ico { top: auto; bottom: 2px; }
+  .gchip .sw.down::after { top: 4px; animation: swDown .7s ease-in-out infinite; }
+  @keyframes swDown { from { top: 4px; opacity: 1; } to { top: 14px; opacity: 0; } }
   @keyframes swLR { to { left: 45px; } }
   @keyframes swUp { from { top: 24px; opacity: 1; } to { top: 14px; opacity: 0; } }
-  /* телефон: плашка от левого края до боковых кнопок, текст переносится */
+  /* телефон: по центру между краем и боковыми кнопками (отступы одинаковые с обеих сторон), текст переносится */
   @media (max-width: 640px) {
-    .gchip { left: calc(var(--gap) + var(--sl)); right: calc(var(--gap) + var(--sr) + var(--btn) + 10px);
-             transform: none; max-width: none; height: auto; min-height: 60px; padding: 8px 12px; white-space: normal; font-size: 16px; line-height: 1.25; }
+    .gchip { left: calc(var(--gap) + var(--sl) + var(--btn) + 10px); right: calc(var(--gap) + var(--sr) + var(--btn) + 10px);
+             transform: translateY(-50%); max-width: none; height: auto; min-height: 60px; padding: 8px 12px; white-space: normal; font-size: 16px; line-height: 1.25;
+             flex-wrap: wrap; justify-content: center; text-align: center; }
     .gchip.pop { animation-name: chipPopN; }
-    @keyframes chipPopN { from { transform: scale(.6); } }
+    @keyframes chipPopN { from { transform: translateY(-50%) scale(.6); } }
   }
   @media (prefers-reduced-motion: reduce) { .gchip .gi, .gchip img.gs, .gchip .sw::after { animation: none; } }
   [data-theme="dark"] .gchip { background: #3a3420; border-color: #6b5a22; }
@@ -623,6 +631,7 @@ if (inOK) {
   <button data-k="L" title="Налево"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button data-k="S" title="Прямо"><svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>
   <button data-k="R" title="Направо"><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button data-k="U" title="Разворот (↓)" class="ubtn"><svg class="ico" viewBox="0 0 24 24"><path d="M15 20V10a4 4 0 0 0-8 0v7"/><path d="M4 14l3 3 3-3"/></svg></button>
 </div>
 <div class="coach hidden" id="coach" role="status" aria-live="polite">
   <div class="cico" id="coachIco"></div>
@@ -653,7 +662,7 @@ if (inOK) {
         <div class="mname"><b class="mn"></b><small class="ms"></small><span class="mdots"></span></div>
         <button class="mstep" data-step="1" aria-label="Следующий режим"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
-  <div class="keys">+ / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук · Q режим ПДД</div>
+  <div class="keys">↓ разворот · + / − масштаб · [ ] скорость · Esc пауза · H подсказка · M звук · Q режим ПДД</div>
   <div class="startAuth" id="startAuth"></div>
 </div></div>
 <div class="overlay hidden" id="over"><div class="card">
@@ -1025,7 +1034,20 @@ function reset() {
   const target = [(lng - LNG0) * KX, (lat - LAT0) * KY];
   let s = 0, best = 1e9;
   P.forEach((p, i) => { const d = dist(p, target) + (ADJ[i].length < 3 ? 200 : 0); if (d < best) { best = d; s = i; } });
-  head = { from: s, to: ADJ[s][Math.floor(Math.random() * ADJ[s].length)], d: 0 };
+  // направление старта — то, где ближайший Т-перекрёсток не ближе 250 м: раньше каждый шестой заезд начинался
+  // в 28–85 м от такого перекрёстка и терял жизнь в первую же секунду
+  const forcedAhead = (from, to) => {
+    let d = dist(P[from], P[to]);
+    for (let j = 0; j < 200 && d < 250; j++) {
+      if (ADJ[to].length >= 3 && isForcedJunction(to, from)) return d;
+      if (ADJ[to].length < 2) return d;
+      const nx = ADJ[to].length === 2 ? (ADJ[to][0] === from ? ADJ[to][1] : ADJ[to][0]) : pickExit(to, from, 0, null).n;
+      from = to; to = nx; d += dist(P[from], P[to]);
+    }
+    return 1e9;
+  };
+  const dirs = ADJ[s].slice().sort(() => Math.random() - .5).map(n => ({ n, d: forcedAhead(s, n) }));
+  head = { from: s, to: (dirs.find(o => o.d >= 250) || dirs.sort((a, b) => b.d - a.d)[0]).n, d: 0 };
   map.jumpTo({ center: toLL(...P[s]), bearing: brg(head.from, head.to), zoom: zoomLvl });
   traffic = pickTraffic(); sinceTraffic = 0;
   trail = [{ p: P[s], c: traffic }];
@@ -1060,27 +1082,90 @@ const bearingPP = (a, b) => Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI
 // выбор ребра на узле: первый перекрёсток со съездом в нужную сторону «съедает» поворот.
 // Направления сравниваем на отрезке ~30–40 м, а не по первому кусочку дороги:
 // съезд-«рукав» в начале почти параллелен улице, и раньше змейка иногда сама уходила на него.
+// Съезд-разворот: короткий «рукав» через разделительную полосу — не дальше 80 м по нему, и дальше можно ехать
+// почти точно в обратную сторону. Раньше «налево» уводило змейку в такой рукав, а на его конце (Т-перекрёсток
+// со встречной половиной дороги) снималась жизнь. Теперь развороты — только по команде «разворот» (свайп вниз, ↓)
+const U_CACHE = new Map();
+function isUturnExit(at, came, n, inB) {
+  const key = came + '>' + at + '>' + n;
+  let v = U_CACHE.get(key);
+  if (v !== undefined) return v;
+  v = false;
+  let f = at, t = n, L = dist(P[f], P[t]);
+  for (let i = 0; i < 40 && ADJ[t].length === 2 && L < 80; i++) { const nx = ADJ[t][0] === f ? ADJ[t][1] : ADJ[t][0]; f = t; t = nx; L += dist(P[f], P[t]); }
+  if (L <= 80 && ADJ[t].length >= 3) {
+    const back = inB + 180;
+    // встречная половина дороги идёт в стороне (≥ 9 м): иначе это съезд обратно на свою же дорогу, где лежит тело
+    v = ADJ[t].some(m => m !== f && Math.abs(norm(bearingPP(P[t], aheadPoint(t, m, 40)) - back)) < 35)
+      && Math.abs(norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB)) > 100
+      && segDist(P[t], aheadPoint(at, came, 80), P[at]) > 9;
+  }
+  U_CACHE.set(key, v);
+  return v;
+}
 function pickExit(at, came, curB, q) {
   const opts = ADJ[at].filter(n => n !== came);
   if (!opts.length) return { n: came, used: false };   // тупик → разворот
   const inB = bearingPP(aheadPoint(at, came, 30), P[at]);
-  const c = opts.map(n => ({ n, d: norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB) }));
-  if (c.length === 1) return { n: c[0].n, used: false }; // просто изгиб дороги
+  const all = opts.map(n => ({ n, d: norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB) }));
+  if (all.length === 1) return { n: all[0].n, used: false }; // просто изгиб дороги
+  all.forEach(o => { o.u = isUturnExit(at, came, o.n, inB); });
+  if (q === 'U') {                                    // разворот: самый «обратный» из рукавов-разворотов
+    const u = all.filter(o => o.u).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    if (u.length) return { n: u[0].n, used: true, u: true };
+  }
+  const c = all.filter(o => !o.u).length ? all.filter(o => !o.u) : all;   // обычные повороты и «прямо» — без разворотов
   if (q === 'L' || q === 'R') {
     const sign = q === 'L' ? -1 : 1;
     const side = c.filter(o => o.d * sign > 30 && o.d * sign < 165).sort((a, b) => Math.abs(a.d - 90 * sign) - Math.abs(b.d - 90 * sign));
     if (side.length) return { n: side[0].n, used: true };
   }
+  // только что развернулись: на выезде из рукава едем в обратную сторону, а не выбираем заново
+  if (uturnB !== null && odo - uturnOdo < 120) {
+    const back = c.slice().sort((a, b) => Math.abs(norm(bearingPP(P[at], aheadPoint(at, a.n, 40)) - uturnB)) - Math.abs(norm(bearingPP(P[at], aheadPoint(at, b.n, 40)) - uturnB)))[0];
+    return { n: back.n, used: false };
+  }
   c.sort((a, b) => Math.abs(a.d) - Math.abs(b.d));
   return { n: c[0].n, used: false };
 }
+let uturnB = null, uturnOdo = -1e9, turnOdo = -1e9;
+// Разворот безопасен, если путь после него (на длину тела) не проходит по телу: бывает, что дорога разделена
+// совсем коротко и встречная половина тут же сливается с той, по которой лежит хвост
+function uturnSafe(J, from, ahead) {
+  const r = pickExit(J, from, 0, 'U');
+  if (!r.u) return false;
+  const back = bearingPP(aheadPoint(J, from, 30), P[J]) + 180;
+  const body = (bodyPieces || []).map(p => [p[0], p[1]]);
+  for (let i = 1; i < ahead.length; i++) body.push([ahead[i - 1], ahead[i]]);
+  let f = J, t = r.n, L = 0, guided = true;
+  for (let i = 0; i < 400 && L < Math.min(bodyLen + 60, 600); i++) {
+    const seg = dist(P[f], P[t]);
+    for (let s = 0; s <= seg; s += 4) {
+      const k = s / (seg || 1), q = [P[f][0] + (P[t][0] - P[f][0]) * k, P[f][1] + (P[t][1] - P[f][1]) * k];
+      if (L + s > 35 && body.some(([a, b]) => segDist(q, a, b) < 6)) return false;   // первые 35 м — сам рукав у перекрёстка
+    }
+    L += seg;
+    let nx;
+    if (ADJ[t].length === 2) nx = ADJ[t][0] === f ? ADJ[t][1] : ADJ[t][0];
+    else if (ADJ[t].length >= 3) {
+      const opts = ADJ[t].filter(n => n !== f);
+      guided = L < 120;                    // как в игре: первые 120 м после разворота едем «обратно»
+      nx = guided ? opts.sort((a, b) => Math.abs(norm(bearingPP(P[t], aheadPoint(t, a, 40)) - back)) - Math.abs(norm(bearingPP(P[t], aheadPoint(t, b, 40)) - back)))[0]
+        : pickExit(t, f, 0, null).n;
+    } else break;
+    f = t; t = nx;
+  }
+  return true;
+}   // turnOdo — где был последний поворот   // курс после разворота: на выезде из рукава змейка продолжает ехать обратно
 // Поворот, нажатый во время предупреждения, нацелен на тот Т-перекрёсток (queuedFor),
 // а не на первый попавшийся перекрёсток со съездом в ту же сторону.
 // На любом Т-перекрёстке заказ всё равно срабатывает: там прямо ехать некуда.
 const queueAt = (at, came) => queuedFor < 0 || at === queuedFor || isForcedJunction(at, came) ? queued : null;
 function chooseNext(at, came, curB) {
   const q = queueAt(at, came), r = pickExit(at, came, curB, q);
-  if (r.used) { setQueued(null); SFX.turn(); }
+  if (r.used) { const q2 = queued2; queued2 = null; setQueued(q2); SFX.turn(); }
+  if (r.used) turnOdo = odo;
+  if (r.u) { uturnB = bearingPP(aheadPoint(at, came, 30), P[at]) + 180; uturnOdo = odo; }
   if (tut) tutOnNode(at, came, r.n, r.used, q);
   return r.n;
 }
@@ -1119,7 +1204,7 @@ function advance(move) {
     move -= rem; odo += rem;
     if (queued && odo - queuedAt > Math.max(QUEUE_TTL, curV * 6)) setQueued(null);   // не меньше 6 секунд
     // Т-образный перекрёсток, а поворот не выбран: змейка «едет прямо» в стену — минус жизнь
-    if (!queued && !tut && odo - lifeLostAt > 80 && isForcedJunction(head.to, head.from)) {   // 80 м после потери — без второй потери подряд
+    if (!queued && !tut && gameTime > 3000 && odo - uturnOdo > 120 && odo - turnOdo > Math.max(50, curV * .6) && odo - lifeLostAt > 80 && isForcedJunction(head.to, head.from)) {   // сразу после поворота второй Т-перекрёсток не успеть — без штрафа   // первые 3 с заезда — без штрафа   // 80 м после потери — без второй потери подряд
       loseLife('Не выбран поворот');
       if (!alive) return;
     }
@@ -1496,7 +1581,11 @@ function findTurn(pts, cum) {
     return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t];
   };
   for (let k = 1; k < pts.length - 1 && cum[k] < 3000; k++) {
-    if (ADJ[nav.path[k - 1]].length < 3) continue;
+    const node = nav.path[k - 1];
+    if (ADJ[node].length < 3) continue;
+    // маршрут идёт через съезд-разворот — это команда «разворот» (↓), а не «налево/направо»
+    const came = k >= 2 ? nav.path[k - 2] : head.from, next = nav.path[k];
+    if (next !== undefined && isUturnExit(node, came, next, bearingPP(aheadPoint(node, came, 30), P[node]))) return { k, dir: 'U' };
     const d = norm(brgPt(pts[k], at(cum[k] + 40)) - brgPt(at(cum[k] - 30), pts[k]));
     if (Math.abs(d) > 35) return { k, dir: d > 0 ? 'R' : 'L' };
   }
@@ -1615,9 +1704,10 @@ function navTalk(rest, turnIn) {
   if (gameTime - nav.lastSay < SAY_EVERY) return;
   nav.lastSay = gameTime; nav.said++;
   const side = nav.turn && nav.turn.dir === 'R' ? 'направо' : 'налево';
+  const act = nav.turn && nav.turn.dir === 'U' ? 'развернитесь' : 'поверните ' + side;
   if (rest < 400) say('Финиш через ' + distText(rest, true));
-  else if (nav.turn && turnIn < 600) say(`Через ${distText(turnIn, true)} поверните ${side}`);
-  else if (nav.said % 2 && nav.turn) say(`Двигайтесь прямо ${distText(turnIn, true)}, затем поверните ${side}`);
+  else if (nav.turn && turnIn < 600) say(`Через ${distText(turnIn, true)} ${act}`);
+  else if (nav.said % 2 && nav.turn) say(`Двигайтесь прямо ${distText(turnIn, true)}, затем ${act}`);
   else say('До конца маршрута осталось ' + distText(rest, true));
 }
 async function geocode(q) {
@@ -1677,6 +1767,7 @@ renderPlaces();
 
 // ---------- управление ----------
 const TURN_ICON = {
+  U: '<path d="M15 20V10a4 4 0 0 0-8 0v7"/><path d="M4 14l3 3 3-3"/>',
   L: '<path d="M16 20v-7a3 3 0 0 0-3-3H6"/><path d="M10 6l-4 4 4 4"/>',
   R: '<path d="M8 20v-7a3 3 0 0 1 3-3h7"/><path d="M14 6l4 4-4 4"/>',
 };
@@ -1691,7 +1782,10 @@ let askShown = false;
 function isForcedJunction(at, from) {
   if (ADJ[at].length < 3) return false;
   const inB = bearingPP(aheadPoint(at, from, 30), P[at]);
-  return ADJ[at].filter(n => n !== from).every(n => Math.abs(norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB)) > 35);
+  // съезды-развороты не в счёт: если без них дорога просто продолжается (пусть с изгибом), выбор не нужен
+  const ex = ADJ[at].filter(n => n !== from && !isUturnExit(at, from, n, inB));
+  if (ex.length < 2) return false;
+  return ex.every(n => Math.abs(norm(bearingPP(P[at], aheadPoint(at, n, 40)) - inB)) > 35);
 }
 // ---------- жизни: знак 7.1 «Пункт медицинской помощи» ----------
 const LIVES_START = 3, LIVES_MAX = 5;      // в начале 3, подобранными знаками — до 5
@@ -1733,9 +1827,12 @@ function updateAsk(hp) {
   if (ask) SFX.queue();
 }
 let queuedFor = -1, askTarget = -1;
-function setQueued(q, target = -1) {
+// второй поворот подряд (два нажатия в одну сторону до первого поворота — разворот через два перекрёстка)
+let queued2 = null;
+function setQueued(q, target = -1, keep2 = false) {
   queued = q; queuedAt = odo; queuedFor = q ? target : -1;
-  $('turn').innerHTML = q ? `<svg class="ico" viewBox="0 0 24 24">${TURN_ICON[q]}</svg>` : '';
+  if (!keep2) queued2 = null;
+  $('turn').innerHTML = q ? `<svg class="ico" viewBox="0 0 24 24">${TURN_ICON[q]}</svg>${queued2 ? '<b class="x2">×2</b>' : ''}` : '';
   $('turn').classList.toggle('on', !!q);
   $('turn').classList.remove('ask'); askShown = false;
 }
@@ -1753,12 +1850,35 @@ function nearTurnJunction(k, maxD, stopAt) {
 function steer(k) {
   audioInit();
   if (!alive || paused || quiz || held) return;
-  if (fxActive('invert') && k !== 'S') k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
+  if (fxActive('invert') && (k === 'L' || k === 'R')) k = k === 'L' ? 'R' : 'L';   // знак «Скользкая дорога»
   let target = askShown ? askTarget : -1;
   if (tut && tut.gate) target = tut.gate.n;          // в обучении нажатие относится к подсвеченному перекрёстку
+  // едем по маршруту («Домой», финиш в обучении): поворот в ту же сторону, что подсказывает навигатор, — на его перекрёсток,
+  // а не на первый попавшийся съезд (иначе змейка уходит с маршрута раньше времени)
+  if (target < 0 && nav && nav.turn && nav.turn.dir === k && nav.cum.length) {
+    const turnIn = dist(headPos(), P[head.to]) + nav.cum[nav.turn.k] - (nav.cum[1] || 0);
+    if (turnIn < 200) target = nav.path[nav.turn.k - 1];
+  }
   // мигает предупреждение о дальнем Т-перекрёстке, а прямо перед носом перекрёсток со съездом в эту сторону:
   // игрок жмёт именно на него. На большой скорости предупреждение горит заранее и раньше «забирало» такие нажатия
-  if (target >= 0 && k !== 'S') { const near = nearTurnJunction(k, Math.max(60, curV * 1.2), target); if (near >= 0) target = near; }
+  // Окно — 20 м (перекрёсток вплотную), а не «1,2 секунды езды»: на ×6 это было 270 м, туда почти всегда попадал
+  // съезд во двор, поворот срабатывал на нём, а на мигающем Т-перекрёстке змейка оставалась без поворота и теряла жизнь
+  if (target >= 0 && k !== 'S') { const near = nearTurnJunction(k, 20, target); if (near >= 0) target = near; }
+  if (k === 'U') {
+    let from = head.from, to = head.to, d = dist(headPos(), P[to]), found = -1, unsafe = false;
+    const ahead = [headPos(), P[to]];                  // путь до разворота — к этому моменту там тоже будет тело
+    for (let i = 0; i < 200 && d < 600; i++) {
+      if (ADJ[to].length >= 3 && pickExit(to, from, 0, 'U').u) { if (uturnSafe(to, from, ahead)) { found = to; break; } unsafe = true; }
+      const r = pickExit(to, from, 0, null); if (r.n === from) break;
+      from = to; to = r.n; d += dist(P[from], P[to]); ahead.push(P[to]);
+    }
+    if (found < 0) { toast(unsafe ? 'Здесь не развернуться: врежешься в свой хвост' : 'Впереди нет разворота — поверни на перекрёстке'); return; }
+    setQueued('U', found); SFX.queue(); return;
+  }
+  // тот же поворот ещё раз, пока первый не случился, — запоминаем второй: после первого поворота он сработает
+  // на следующем перекрёстке со съездом в ту сторону
+  if (k !== 'S' && queued === k && !queued2) { queued2 = k; setQueued(queued, queuedFor, true); SFX.queue(); return; }
+  if (k !== 'S' && queued === k && queued2) return;   // больше двух подряд не копим
   setQueued(k === 'S' ? null : k, target);
   SFX.queue();
 }
@@ -1768,7 +1888,7 @@ function toggleGraph() {
   map.getSource('graph').setData(show ? graphGeo() : empty());
   map.setLayoutProperty('graph', 'visibility', show ? 'visible' : 'none');
 }
-const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: 'S', KeyW: 'S' };
+const KEYS = { ArrowLeft: 'L', KeyA: 'L', ArrowRight: 'R', KeyD: 'R', ArrowUp: 'S', KeyW: 'S', ArrowDown: 'U', KeyS: 'U' };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;           // печатаем адрес — не рулим
   if (paused && e.code !== 'Escape' && e.code !== 'KeyP') return;
@@ -1817,6 +1937,7 @@ $('map').addEventListener('touchend', e => {
   const dx = t.lx - t.x, dy = t.ly - t.y;
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) steer(dx < 0 ? 'L' : 'R');
   else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.5) steer('S');
+  else if (dy > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) steer('U');     // свайп вниз — разворот
 });
 $('map').addEventListener('touchcancel', () => { touch0 = null; });
 
@@ -3037,18 +3158,17 @@ const CHIP_STEPS = {
   pdd: [['turn', '← → поворот на перекрёстке'], [ICO.quiz, 'Съел знак — ответь, что он значит'], [ICO.snake, 'Не кусай свой хвост']],
 };
 const SW_ICO = { L: '<svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>', R: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
-  U: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>' };
+  U: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>', D: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg>' };
 let chipToken = 0;
 function showChip(html) {
   const c = $('gchip');
   c.innerHTML = html; c.classList.remove('hidden', 'pop'); void c.offsetWidth; c.classList.add('pop');
-  document.body.style.setProperty('--chipH', c.offsetHeight + 'px'); document.body.classList.add('chipon');
 }
-function hideChips() { chipToken++; $('gchip').classList.add('hidden'); document.body.classList.remove('chipon'); }
+function hideChips() { chipToken++; $('gchip').classList.add('hidden'); }
 function playTips(mode) {
   const my = ++chipToken;
   const steps = CHIP_STEPS[mode].slice();
-  if (swipeOnly) steps.splice(0, 1, ['swipeLR', 'Свайп ← → — поворот'], ['swipeUp', 'Свайп ↑ — прямо']);
+  if (swipeOnly) steps.splice(0, 1, ['swipeLR', 'Свайп ← → — поворот'], ['swipeUp', 'Свайп ↑ — прямо'], ['swipeDown', 'Свайп ↓ — разворот']);
   steps.push('avoid');
   let i = 0;
   const next = () => {
@@ -3058,6 +3178,7 @@ function playTips(mode) {
     if (st === 'avoid') showChip(['2.5', '1.25', '3.1'].map(k => `<img class="gs" src="signs/${k}.svg" alt="">`).join('') + '<span>Не ешь эти знаки</span>');
     else if (st[0] === 'swipeLR') showChip(`<div class="sw lr">${SW_ICO.L}${SW_ICO.R}</div><span>${st[1]}</span>`);
     else if (st[0] === 'swipeUp') showChip(`<div class="sw up">${SW_ICO.U}</div><span>${st[1]}</span>`);
+    else if (st[0] === 'swipeDown') showChip(`<div class="sw up down">${SW_ICO.D}</div><span>${st[1]}</span>`);
     else showChip(`<div class="gi">${st[0] === 'turn' ? ICO.turn : st[0]}</div><span>${st[1]}</span>`);
     setTimeout(next, i === steps.length ? 2800 : 2100);
   };
